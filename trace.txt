@@ -1,0 +1,8 @@
+1 Sonic 3 10
+
+3 Goku 8 20
+
+8 Obi_Wan 4 15
+
+12 Sub_Zero 10 30
+
