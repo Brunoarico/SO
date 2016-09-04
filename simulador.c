@@ -21,6 +21,8 @@ typedef struct _cell {
 
 typedef cell* queue;
 
+pthread_mutex_t mutex;
+
 queue NewQueue () {
     cell *head;
     head = malloc (sizeof (cell));
@@ -72,34 +74,45 @@ int Elements (queue Q) {
     return i;
 }
 
-void * ThreadAdd (void * a) {
-   int i, tmp;
-   for (i = 0; i < 1000000000; i++) {
-       tmp = 2*tmp-1;
-   }
-   printf("Pronto!\n");
-   return NULL;
+void *ThreadAdd (void *arg) {
+    int time, i = 0;
+    process P;
+    P = *(process*) arg;
+    printf("Duração: %d\n", P.dt);
+    pthread_mutex_lock(&mutex);
+
+    time = clock();
+    while((clock()-time)/CLOCKS_PER_SEC < P.dt)
+	i = i++ * 2 - i*i;
+    
+    pthread_mutex_unlock(&mutex);
+    printf("Pronto %s!\n", P.name);
+    return NULL;
 }
 
 void FCFS (process *routine, int Nprocs) {
     queue Q;
     int i, execs = 0;
     unsigned int t_start, delta;
-    
+    process P;
     t_start = clock();
     Q = NewQueue();
     printf("i=%d\n", Nprocs);
     
-    while(execs < Nprocs){
-	for (i = execs; i < Nprocs; i++){
-	    delta = (clock()-t_start)/CLOCKS_PER_SEC;
+    while (execs < Nprocs) {
+	for (i = execs; i < Nprocs; i++) {
+	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
+	    
 	    if (routine[i].t_begin <= delta){
-		printf("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
-		pthread_create(&routine[i].tID, NULL, ThreadAdd, NULL);
+		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
 		execs++;
-	        Q = to_Queue(routine[i], Q);
-		printf("%d\n", Elements(Q));;
+	        Q = to_Queue (routine[i], Q);
+		printf ("%d\n", Elements(Q));;
 	    }
+	}
+	if (!is_Empty(Q)) {
+	    P = Unqueue(Q);
+	    pthread_create(&P.tID, NULL, ThreadAdd, (void*) &P);
 	}
     }
 }
@@ -111,6 +124,8 @@ int main() {
     process routine[1000];
     unsigned long int time;
     
+    pthread_mutex_init(&mutex,NULL);
+    
     trace = fopen ("trace.txt", "r");
     
     if (trace == NULL){
@@ -121,11 +136,10 @@ int main() {
         printf("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
 
 
-    FCFS(routine, i);
-    pthread_join(routine[0].tID, NULL);
-    pthread_join(routine[1].tID, NULL);
-    pthread_join(routine[2].tID, NULL);
-    pthread_join(routine[3].tID, NULL);
+    FCFS (routine, i);
+    for (j = 0; j < i; j++)
+	pthread_join(routine[j].tID, NULL);
+    
     pthread_exit(NULL);
     return 0;
 }
