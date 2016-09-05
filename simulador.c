@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <pthread.h>
+#include <semaphore.h>
+
 #define MAXPROC 100000
 typedef char* string;
 
@@ -21,7 +22,7 @@ typedef struct _cell {
 
 typedef cell* queue;
 
-pthread_mutex_t mutex;
+sem_t mutex;
 
 queue NewQueue () {
     cell *head;
@@ -78,15 +79,15 @@ void *ThreadAdd (void *arg) {
     int time, i = 0;
     process P;
     P = *(process*) arg;
-    printf("Duração: %d\n", P.dt);
-    pthread_mutex_lock(&mutex);
-
+    
+    sem_wait(&mutex); 
+    
     time = clock();
     while((clock()-time)/CLOCKS_PER_SEC < P.dt)
 	i = i++ * 2 - i*i;
+    printf("Pronto %s em %lu segundos!\n", P.name, (clock()-time)/CLOCKS_PER_SEC);
     
-    pthread_mutex_unlock(&mutex);
-    printf("Pronto %s!\n", P.name);
+    sem_post(&mutex); 
     return NULL;
 }
 
@@ -95,10 +96,10 @@ void FCFS (process *routine, int Nprocs) {
     int i, execs = 0;
     unsigned int t_start, delta;
     process P;
+    
     t_start = clock();
     Q = NewQueue();
-    printf("i=%d\n", Nprocs);
-    
+
     while (execs < Nprocs) {
 	for (i = execs; i < Nprocs; i++) {
 	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
@@ -107,9 +108,9 @@ void FCFS (process *routine, int Nprocs) {
 		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
 		execs++;
 	        Q = to_Queue (routine[i], Q);
-		printf ("%d\n", Elements(Q));;
 	    }
 	}
+	
 	if (!is_Empty(Q)) {
 	    P = Unqueue(Q);
 	    pthread_create(&P.tID, NULL, ThreadAdd, (void*) &P);
@@ -124,7 +125,10 @@ int main() {
     process routine[1000];
     unsigned long int time;
     
-    pthread_mutex_init(&mutex,NULL);
+    if (sem_init(&mutex, 0, 1) == -1) {
+	printf("Erro ao inicializar o semáforo :(\n");
+	return(2);
+    }
     
     trace = fopen ("trace.txt", "r");
     
@@ -134,11 +138,8 @@ int main() {
     }
     for(i = 0; fscanf (trace, "%d %s %d %d", &routine[i].t_begin, routine[i].name, &routine[i].dt, &routine[i].deadline) != EOF; i++)
         printf("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
-
-
+    
     FCFS (routine, i);
-    for (j = 0; j < i; j++)
-	pthread_join(routine[j].tID, NULL);
     
     pthread_exit(NULL);
     return 0;
