@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <fcntl.h>     
+#include <sys/stat.h>  
 #include <semaphore.h>
+
+sem_t mutex;
 
 #define MAXPROC 100000
 typedef char* string;
@@ -21,8 +25,6 @@ typedef struct _cell {
 } cell;
 
 typedef cell* queue;
-
-sem_t mutex;
 
 queue NewQueue () {
     cell *head;
@@ -78,33 +80,35 @@ int Elements (queue Q) {
 void *ThreadAdd (void *arg) {
     int time, i = 0;
     process P;
-    P = *(process*) arg;
-    
-    sem_wait(&mutex); 
-    
+    sem_wait(&mutex);
+    P= *(process*) arg;
     time = clock();
-    while((clock()-time)/CLOCKS_PER_SEC < P.dt)
-	i = i++ * 2 - i*i;
+    printf("Começando %s para durar %d\n", P.name, P.dt);
+    while((clock()-time)/CLOCKS_PER_SEC < P.dt){
+	i++;
+	//printf("%s %lu\n", P.name, (clock()-time)/CLOCKS_PER_SEC);
+    }
     printf("Pronto %s em %lu segundos!\n", P.name, (clock()-time)/CLOCKS_PER_SEC);
-    
-    sem_post(&mutex); 
+    free(arg);
+    sem_post(&mutex);
     return NULL;
 }
 
 void FCFS (process *routine, int Nprocs) {
     queue Q;
-    int i, execs = 0;
+    int i, execs = 0, running = 0;
     unsigned int t_start, delta;
-    process P;
+    process *P;
     
     t_start = clock();
     Q = NewQueue();
 
     while (execs < Nprocs) {
+	
 	for (i = execs; i < Nprocs; i++) {
-	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
 	    
-	    if (routine[i].t_begin <= delta){
+	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
+	    if (routine[i].t_begin <= delta) {
 		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
 		execs++;
 	        Q = to_Queue (routine[i], Q);
@@ -112,8 +116,11 @@ void FCFS (process *routine, int Nprocs) {
 	}
 	
 	if (!is_Empty(Q)) {
-	    P = Unqueue(Q);
-	    pthread_create(&P.tID, NULL, ThreadAdd, (void*) &P);
+	    sem_wait(&mutex);
+	    P = malloc( sizeof(process));
+	    *P = Unqueue(Q);
+	    pthread_create(&P->tID, NULL, ThreadAdd, P);
+	    sem_post(&mutex);
 	}
     }
 }
@@ -124,12 +131,12 @@ int main() {
     FILE *trace;
     process routine[1000];
     unsigned long int time;
-    
+
     if (sem_init(&mutex, 0, 1) == -1) {
-	printf("Erro ao inicializar o semáforo :(\n");
-	return(2);
+      printf("Erro ao inicializar o semáforo :(\n");
+      return(2);
     }
-    
+
     trace = fopen ("trace.txt", "r");
     
     if (trace == NULL){
