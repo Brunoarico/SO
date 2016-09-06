@@ -7,7 +7,7 @@
 #include <semaphore.h>
 
 sem_t mutex;
-pthread_cond_t flag;
+
 
 #define MAXPROC 100000
 typedef char* string;
@@ -124,13 +124,13 @@ void FCFS (process *routine, int Nprocs) {
     unsigned int t_start, delta;
     process *P;
     
-    t_start = clock();
-    Q = NewQueue();
+    t_start = clock ();
+    Q = NewQueue ();
 
-    while (execs < Nprocs) {
+    while (execs < Nprocs || !is_Empty (Q)) {
 	for (i = execs; i < Nprocs; i++) {
 	    
-	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
+	    delta = (clock () - t_start) / CLOCKS_PER_SEC;
 	    if (routine[i].t_begin <= delta) {
 		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
 		execs++;
@@ -138,12 +138,10 @@ void FCFS (process *routine, int Nprocs) {
 	    }
 	}
 	
-	if (!is_Empty(Q)) {
-	    sem_wait(&mutex);
-	    P = malloc( sizeof(process));
-	    *P = Unqueue(Q);
-	    pthread_create(&P->tID, NULL, ThreadAdd, P);
-	    sem_post(&mutex);
+	if (!is_Empty (Q)) {
+	    P = malloc ( sizeof (process));
+	    *P = Unqueue (Q);
+	    pthread_create (&P->tID, NULL, ThreadAdd, P);
 	}
     }
 }
@@ -154,12 +152,12 @@ void SRT (process *routine, int Nprocs) {
     unsigned int t_start, delta;
     process *P;
     
-    t_start = clock();
-    Q = NewQueue();
+    t_start = clock ();
+    Q = NewQueue ();
 
     while (execs < Nprocs) {
 	for (i = execs; i < Nprocs; i++) {
-	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
+	    delta = (clock () - t_start) / CLOCKS_PER_SEC;
 	    if (routine[i].t_begin <= delta) {
 		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
 		execs++;
@@ -167,6 +165,9 @@ void SRT (process *routine, int Nprocs) {
 		Q = to_PQueue (routine[i], Q);
 	    }
 	}
+	
+	if(!is_Empty (Q)){}
+	    
     }    
 }
 
@@ -176,8 +177,6 @@ int main() {
     FILE *trace;
     process routine[1000];
     unsigned long int time;
-
-    pthread_cond_init (&flag, NULL);
 
     if (sem_init(&mutex, 0, 1) == -1) {
       printf("Erro ao inicializar o semáforo :(\n");
@@ -193,9 +192,8 @@ int main() {
     for(i = 0; fscanf (trace, "%d %s %d %d", &routine[i].t_begin, routine[i].name, &routine[i].dt, &routine[i].deadline) != EOF; i++)
         printf("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
     
-    SRT (routine, i);
+    FCFS (routine, i);
     sem_destroy(&mutex);
-    pthread_cond_destroy(&flag);
     pthread_exit(NULL);
     return 0;
 }
