@@ -7,6 +7,7 @@
 #include <semaphore.h>
 
 sem_t mutex;
+pthread_cond_t flag;
 
 #define MAXPROC 100000
 typedef char* string;
@@ -15,6 +16,7 @@ typedef struct _process {
     char name[100];
     int t_begin;
     int dt;
+    int remaining;
     int deadline;
     pthread_t tID;
 } process;
@@ -66,16 +68,38 @@ queue to_Queue (process this, queue Q) {
     return new;
 }
 
+queue to_PQueue (process this, queue Q) {
+    cell *new;
+    cell *ant, *c;
+    new = malloc (sizeof (cell));
+    c = Q->prox;
+    ant = Q;
+    new->proc = this;
+    while (1) {
+        if(this.remaining < c->proc.remaining ||c == Q) {
+	    ant->prox = new;
+	    new->prox = c;
+	    return Q;
+	}
+	else{
+	    ant = c;
+	    c=c->prox;
+	}
+    }
+}
+
 int Elements (queue Q) {
     queue aux;
     int i;
     aux = Q->prox;
     for( i = 0; aux != Q; i++, aux = aux->prox){
-	//printf("%s -> ",aux->proc.name);	       
+	printf("%s -> ",aux->proc.name);	       
     }
     printf("\n");
     return i;
 }
+
+
 
 void *ThreadAdd (void *arg) {
     int time, i = 0;
@@ -96,7 +120,7 @@ void *ThreadAdd (void *arg) {
 
 void FCFS (process *routine, int Nprocs) {
     queue Q;
-    int i, execs = 0, running = 0;
+    int i, execs = 0;
     unsigned int t_start, delta;
     process *P;
     
@@ -104,7 +128,6 @@ void FCFS (process *routine, int Nprocs) {
     Q = NewQueue();
 
     while (execs < Nprocs) {
-	
 	for (i = execs; i < Nprocs; i++) {
 	    
 	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
@@ -125,12 +148,36 @@ void FCFS (process *routine, int Nprocs) {
     }
 }
 
+void SRT (process *routine, int Nprocs) {
+    queue Q;
+    int i, execs = 0;
+    unsigned int t_start, delta;
+    process *P;
+    
+    t_start = clock();
+    Q = NewQueue();
+
+    while (execs < Nprocs) {
+	for (i = execs; i < Nprocs; i++) {
+	    delta = (clock() - t_start) / CLOCKS_PER_SEC;
+	    if (routine[i].t_begin <= delta) {
+		printf ("Ja chegou o %s! %d segundos\n",routine[i].name, delta);
+		execs++;
+		routine[i].remaining = routine[i].dt;
+		Q = to_PQueue (routine[i], Q);
+	    }
+	}
+    }    
+}
+
 
 int main() {
     int i, j;
     FILE *trace;
     process routine[1000];
     unsigned long int time;
+
+    pthread_cond_init (&flag, NULL);
 
     if (sem_init(&mutex, 0, 1) == -1) {
       printf("Erro ao inicializar o semáforo :(\n");
@@ -146,8 +193,9 @@ int main() {
     for(i = 0; fscanf (trace, "%d %s %d %d", &routine[i].t_begin, routine[i].name, &routine[i].dt, &routine[i].deadline) != EOF; i++)
         printf("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
     
-    FCFS (routine, i);
-    
+    SRT (routine, i);
+    sem_destroy(&mutex);
+    pthread_cond_destroy(&flag);
     pthread_exit(NULL);
     return 0;
 }

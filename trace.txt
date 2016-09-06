@@ -2,7 +2,13 @@
 
 3 Goku 8 20
 
+5 Megaman 5 10
+
 8 Obi_Wan 4 15
 
+9 Iron_Man 1 3
+
 12 Sub_Zero 10 30
+
+
 
