@@ -19,6 +19,7 @@ typedef struct _process {
     float dt;         // quanto dura
     float remaining;  // quanto resta
     float deadline;   // limite
+    float quantum;    // classe de quantum para aquele processo
     int flag;         // flag de ativo
     struct _process *self;        // ja iniciado
     pthread_t tID;
@@ -39,6 +40,24 @@ queue NewQueue () {
     head->proc.remaining = -1;
     return head;
 }
+
+/*******************************************************************************************/
+
+queue *NewMultipleQueues (int size) {
+    queue *Qs;
+    int i;
+    Qs = malloc (size * sizeof (queue));
+    printf("mallocquei o Qs em %d\n", size);
+    for (i = 0; i < size; i++) {
+        printf("A\n");
+        Qs[i] = NewQueue();
+        printf("B\n");
+    }
+    printf("acabou\n");
+    return Qs;
+}
+
+/*******************************************************************************************/
 
 int is_Empty(queue Q) {
     if (Q->prox == Q)
@@ -200,6 +219,52 @@ process *initiate_thread (process p) {
     return P;                                                   //retorna um ponteiro para quem esta executando
 }
 
+void *ThreadAdd3 (void *arg) {
+    int time, i = 0;
+    time_t Tstart, Tstop;
+    double tDelta;
+
+    process P, *point;   
+    P= *(process*) arg;
+    point = (process*) arg;
+
+    time(&Tstart);
+
+    time = clock();
+
+    if (P.dt == P.remaining)
+        printf("Começando ");
+    else
+        printf("Continuando ");
+    printf("%s com tempo total %d, faltando %d, executando por %d\n", P.name, P.dt, P.remaining, P.quantum);
+    time (&Tstop);
+    tDelta = diff (Tstop, Tstart);
+
+    while(tDelta < P.quantum){
+        time (&Tstop);
+        tDelta = diff (Tstop, Tstart);
+        i++;
+    }
+    point->remaining = point->remaining - tDelta;
+    printf("Executou %s em %lu segundos! Tempo restante: %d\n", P.name, tDelta, point->remaining);
+    free(arg);
+    return NULL;
+}
+
+/****************************************************************************************************/
+process *initiate_thread2 (process p) {
+    process *P;
+    p.exist = 1;                                               //agora ele existe
+    P = malloc (sizeof(process));                               //aloca um novo P para passar para a thread
+    *P = p;
+    printf("Criando: %s \n", P->name);
+    pthread_create (&P->tID, NULL, ThreadAdd3, P);              //cria a thread
+    remaining_time = P->remaining;                                     //atualiza o tempo de quem esta em execução
+    return P;                                                   //retorna um ponteiro para quem esta executando
+}
+/****************************************************************************************************/
+
+
 void pause_thread (process *p) {
     if (p->self != NULL) {
 	p->flag = 0;
@@ -272,6 +337,103 @@ void SRT (process *routine, int Nprocs) {
 	}
     }
     printf("Fim!\n");
+}
+
+/****************************************************************************************
+*                               MULTIPLAS FILAS                                         *
+****************************************************************************************/
+
+float *GerarVetorQuantuns (int size) {
+    int i;
+    float pot = 1;
+    float *quantuns = malloc (size * sizeof (float));
+    printf ("mallocquei o vetor de quantuns de tam %d\n", size);
+    for (i = 0; i < size; i++) {
+        pot = pot * 2;
+        quantuns[i] = pot;
+    }
+    for (i = 0; i < size; i++)
+        printf("%f ", quantuns[i]);
+    printf("\n");
+    return quantuns;
+}
+
+void LiberarVetorQuantuns (float *quantuns) {
+    free (quantuns);
+}
+
+void MultiplasFIlas (process *routine, int Nprocs) {
+    queue Q, NQ;
+    int i = 0, execs = 0, *execflag;
+    process *P, *EXE = NULL, aux;
+    time_t start, stop;
+    time (&start);
+
+    queue *Qs;
+
+    float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
+    Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
+
+    while (execs < Nprocs) { /*não terminei de executar todos*/
+        time (&stop); /*checa tempo*/
+
+        Delta = difftime (stop, start);
+
+        /*existe(m) processo(s) da rotina para entrar em f0*/
+        while (i < Nprocs && routine[i].t_begin <= delta) { 
+            /*coloca novos processos em f0*/
+            printf ("%f s > mandando %s para a fila inicial\n", Delta, routine[i].name);
+            Qs[0] = to_Queue (routine[i], Q);
+            i++;
+        }
+
+        /* procura quem é o prox processo a executar */
+
+        int filaatual = 0;
+        int achou = 0;
+
+        while (!achou) {
+            if (!is_Empty(Qs[filaatual])) { /* assumindo que NUMBER_OF_QUEUES > 0 */
+                achou = 1;
+                /* faz unqueue e executa aquele quantum */
+                P = malloc ( sizeof (process));
+                *P = Unqueue (Qs[filaatual]);
+                P->quantum = quantuns[filaatual];
+
+                printf ("%f s > começa a rodar %s por %f e tem %f tempo para executar", Delta, P->name, quantuns[filaatual], P->deadline);
+                pthread_create (&P->tID, NULL, ThreadAdd3, P);               
+                
+                pthread_join(P->tID, NULL);
+
+                time (&stop);
+
+                Delta = difftime (stop, start);
+
+                printf("s > Tempo restante de %s: %f\n", Delta, P->name, P->remaining);
+
+                 /*se não terminar passar pra próxima fila */
+
+                if (P->remaining > 0) {
+                    if (filaatual != (NUMBER_OF_QUEUES - 1)) {
+                        filaatual++;
+                        P->quantum = quantuns[filaatual + 1];
+                        printf ("%f s > Ja chegou o %s! na fila %d\n",P->name, filaatual + 1);
+                        Qs[filaatual + 1] = to_Queue (*P, Qs[filaatual + 1]);
+                    } else {
+                            /* ta na última fila (fila circular) */
+                        printf ("%f s > Ja chegou o %s! na fila %d\n",P->name, filaatual);
+                        Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
+                    }
+                } else {
+                    printf("%f s > Acabou %s\n", (char *) &P->name);
+                    execs++;
+                }
+            } else {
+                filaatual++;
+            }
+        }
+    }
+
 }
 
 int main() {
