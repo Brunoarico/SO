@@ -1,10 +1,11 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <assert.h>
 
-
+#define NUMBER_OF_QUEUES 4
 
 pthread_mutex_t mutex;
 float remaining_time = 0;
@@ -220,7 +221,7 @@ process *initiate_thread (process p) {
 }
 
 void *ThreadAdd3 (void *arg) {
-    int time, i = 0;
+    int i = 0;
     time_t Tstart, Tstop;
     double tDelta;
 
@@ -228,33 +229,32 @@ void *ThreadAdd3 (void *arg) {
     P= *(process*) arg;
     point = (process*) arg;
 
+    pthread_mutex_lock(&mutex);
     time(&Tstart);
-
-    time = clock();
 
     if (P.dt == P.remaining)
         printf("Começando ");
     else
         printf("Continuando ");
-    printf("%s com tempo total %d, faltando %d, executando por %d\n", P.name, P.dt, P.remaining, P.quantum);
+    printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);
     time (&Tstop);
-    tDelta = diff (Tstop, Tstart);
+    tDelta = difftime (Tstop, Tstart);
 
     while(tDelta < P.quantum){
         time (&Tstop);
-        tDelta = diff (Tstop, Tstart);
+        tDelta = difftime (Tstop, Tstart);
         i++;
     }
     point->remaining = point->remaining - tDelta;
-    printf("Executou %s em %lu segundos! Tempo restante: %d\n", P.name, tDelta, point->remaining);
+    printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);
     free(arg);
+    pthread_mutex_unlock(&mutex);
     return NULL;
 }
 
 /****************************************************************************************************/
 process *initiate_thread2 (process p) {
-    process *P;
-    p.exist = 1;                                               //agora ele existe
+    process *P;                                             //agora ele existe
     P = malloc (sizeof(process));                               //aloca um novo P para passar para a thread
     *P = p;
     printf("Criando: %s \n", P->name);
@@ -364,27 +364,26 @@ void LiberarVetorQuantuns (float *quantuns) {
 
 void MultiplasFIlas (process *routine, int Nprocs) {
     queue Q, NQ;
-    int i = 0, execs = 0, *execflag;
-    process *P, *EXE = NULL, aux;
+    int i = 0, execs = 0, *execflag, entraram = 0;
+    process *P, *aux;
     time_t start, stop;
     time (&start);
+    char *name;
 
     queue *Qs;
 
     float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
     Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
-
     while (execs < Nprocs) { /*não terminei de executar todos*/
         time (&stop); /*checa tempo*/
-
         Delta = difftime (stop, start);
-
         /*existe(m) processo(s) da rotina para entrar em f0*/
-        while (i < Nprocs && routine[i].t_begin <= delta) { 
+        while (i < Nprocs && routine[i].t_begin <= Delta) {
             /*coloca novos processos em f0*/
             printf ("%f s > mandando %s para a fila inicial\n", Delta, routine[i].name);
-            Qs[0] = to_Queue (routine[i], Q);
+            Qs[0] = to_Queue (routine[i], Qs[0]);
             i++;
+            entraram++;
         }
 
         /* procura quem é o prox processo a executar */
@@ -392,40 +391,36 @@ void MultiplasFIlas (process *routine, int Nprocs) {
         int filaatual = 0;
         int achou = 0;
 
-        while (!achou) {
+        while (entraram != 0 && !achou) {
             if (!is_Empty(Qs[filaatual])) { /* assumindo que NUMBER_OF_QUEUES > 0 */
                 achou = 1;
                 /* faz unqueue e executa aquele quantum */
                 P = malloc ( sizeof (process));
                 *P = Unqueue (Qs[filaatual]);
+                strcpy (name, P->name);
                 P->quantum = quantuns[filaatual];
 
-                printf ("%f s > começa a rodar %s por %f e tem %f tempo para executar", Delta, P->name, quantuns[filaatual], P->deadline);
-                pthread_create (&P->tID, NULL, ThreadAdd3, P);               
-                
+                printf ("%f s > começa a rodar %s por %f e tem %f tempo para executar\n", Delta, name, quantuns[filaatual], P->deadline);
+                pthread_create (&P->tID, NULL, ThreadAdd3, P);
                 pthread_join(P->tID, NULL);
-
                 time (&stop);
-
                 Delta = difftime (stop, start);
-
-                printf("s > Tempo restante de %s: %f\n", Delta, P->name, P->remaining);
+                printf("%f s > Tempo restante de %s: %f\n", Delta, name, P->remaining);
 
                  /*se não terminar passar pra próxima fila */
-
                 if (P->remaining > 0) {
                     if (filaatual != (NUMBER_OF_QUEUES - 1)) {
                         filaatual++;
-                        P->quantum = quantuns[filaatual + 1];
-                        printf ("%f s > Ja chegou o %s! na fila %d\n",P->name, filaatual + 1);
-                        Qs[filaatual + 1] = to_Queue (*P, Qs[filaatual + 1]);
+                        P->quantum = quantuns[filaatual];
+                        printf ("%f s > Ja chegou o %s! na fila %d\n", Delta, name, filaatual);
+                        Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     } else {
                             /* ta na última fila (fila circular) */
-                        printf ("%f s > Ja chegou o %s! na fila %d\n",P->name, filaatual);
+                        printf ("%f s > Ja chegou o %s! na fila %d\n", Delta, name, filaatual);
                         Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     }
                 } else {
-                    printf("%f s > Acabou %s\n", (char *) &P->name);
+                    printf("%f s > Acabou %s\n", Delta, name);
                     execs++;
                 }
             } else {
@@ -442,7 +437,7 @@ int main() {
     process routine[1000];
     unsigned long int time;
 
-    trace = fopen ("trace.txt", "r");
+    trace = fopen ("trace2.txt", "r");
     
     if (trace == NULL){
 	printf ("Problemas na abertura do arquivo\n");
@@ -455,7 +450,7 @@ int main() {
 	routine[i].self = NULL;
     }
     
-    SRT (routine, i);
+    MultiplasFIlas (routine, i);
 
     pthread_exit (NULL);
     return 0;
