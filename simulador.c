@@ -22,6 +22,7 @@ typedef struct _process {
     float deadline;   // limite
     float quantum;    // classe de quantum para aquele processo
     int flag;         // flag de ativo
+    int id;
     struct _process *self;        // ja iniciado
     pthread_t tID;
 } process;
@@ -133,7 +134,18 @@ int Elements (queue Q) {
     int i;
     aux = Q->prox;
     for( i = 0; aux != Q; i++, aux = aux->prox){
-	printf("%s -> ",aux->proc.name);	       
+	printf("%s %d -> ", aux->proc.name, aux->proc.id);	       
+    }
+    printf("\n");
+    return i;
+}
+
+int Elements2 (queue Q, process *routine) {
+    queue aux;
+    int i;
+    aux = Q->prox;
+    for( i = 0; aux != Q; i++, aux = aux->prox){
+    printf("%s %d -> ", routine[aux->proc.id].name, aux->proc.id);         
     }
     printf("\n");
     return i;
@@ -236,7 +248,7 @@ void *ThreadAdd3 (void *arg) {
         printf("Começando ");
     else
         printf("Continuando ");
-    printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);
+    /*printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);*/
     time (&Tstop);
     tDelta = difftime (Tstop, Tstart);
 
@@ -246,7 +258,7 @@ void *ThreadAdd3 (void *arg) {
         i++;
     }
     point->remaining = point->remaining - tDelta;
-    printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);
+    /*printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);*/
     free(arg);
     pthread_mutex_unlock(&mutex);
     return NULL;
@@ -364,7 +376,7 @@ void LiberarVetorQuantuns (float *quantuns) {
 
 void MultiplasFIlas (process *routine, int Nprocs) {
     queue Q, NQ;
-    int i = 0, execs = 0, *execflag, entraram = 0;
+    int i = 0, a, execs = 0, *execflag, entraram = 0;
     process *P, *aux;
     time_t start, stop;
     time (&start);
@@ -380,8 +392,12 @@ void MultiplasFIlas (process *routine, int Nprocs) {
         /*existe(m) processo(s) da rotina para entrar em f0*/
         while (i < Nprocs && routine[i].t_begin <= Delta) {
             /*coloca novos processos em f0*/
-            printf ("%f s > mandando %s para a fila inicial\n", Delta, routine[i].name);
+            printf ("%f s > mandando %s %d para a fila inicial\n", Delta, routine[i].name, routine[i].id);
             Qs[0] = to_Queue (routine[i], Qs[0]);
+            for (a = 0; a < NUMBER_OF_QUEUES; a++) {
+                printf ("Fila %d ", a);
+                Elements2(Qs[a], routine);
+            }
             i++;
             entraram++;
         }
@@ -400,27 +416,35 @@ void MultiplasFIlas (process *routine, int Nprocs) {
                 strcpy (name, P->name);
                 P->quantum = quantuns[filaatual];
 
-                printf ("%f s > começa a rodar %s por %f e tem %f tempo para executar\n", Delta, name, quantuns[filaatual], P->deadline);
+                printf ("%f s > começa a rodar %s %d por %f e tem %f tempo para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->deadline);
                 pthread_create (&P->tID, NULL, ThreadAdd3, P);
                 pthread_join(P->tID, NULL);
                 time (&stop);
                 Delta = difftime (stop, start);
-                printf("%f s > Tempo restante de %s: %f\n", Delta, name, P->remaining);
+                printf("%f s > Tempo restante de %s %d: %f\n", Delta, routine[P->id].name, P->id, P->remaining);
 
                  /*se não terminar passar pra próxima fila */
                 if (P->remaining > 0) {
                     if (filaatual != (NUMBER_OF_QUEUES - 1)) {
                         filaatual++;
                         P->quantum = quantuns[filaatual];
-                        printf ("%f s > Ja chegou o %s! na fila %d\n", Delta, name, filaatual);
+                        printf ("%f s > Ja chegou o %s %d! na fila %d\n", Delta, routine[P->id].name, P->id, filaatual);
                         Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     } else {
                             /* ta na última fila (fila circular) */
-                        printf ("%f s > Ja chegou o %s! na fila %d\n", Delta, name, filaatual);
+                        printf ("%f s > Ja chegou o %s %d! na fila %d\n", Delta, routine[P->id].name, P->id, filaatual);
                         Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     }
+                    for (a = 0; a < NUMBER_OF_QUEUES; a++) {
+                        printf ("Fila %d ", a);
+                        Elements2(Qs[a], routine);
+                    }
                 } else {
-                    printf("%f s > Acabou %s\n", Delta, name);
+                    printf("%f s > Acabou %s %d\n", Delta, routine[P->id].name, P->id);
+                    for (a = 0; a < NUMBER_OF_QUEUES; a++) {
+                        printf ("Fila %d ", a);
+                        Elements2(Qs[a], routine);
+                    }
                     execs++;
                 }
             } else {
@@ -448,6 +472,7 @@ int main() {
 	routine[i].flag = 1;
 	routine[i].remaining = routine[i].dt;
 	routine[i].self = NULL;
+    routine[i].id = i;
     }
     
     MultiplasFIlas (routine, i);
