@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#include <sched.h>
 
 #define NUMBER_OF_QUEUES 4
 
@@ -21,6 +22,8 @@ pthread_mutex_t mutex;
 float remaining_time = 0;
 float Delta;
 time_t start;
+int debug;
+FILE *saida;
 
 typedef char* string;
 
@@ -248,11 +251,13 @@ void *ThreadAdd3 (void *arg) {
     pthread_mutex_lock (&mutex);
     time (&Tstart);
 
-    if (P.dt == P.remaining)
-        //printf ("Comecando ");
+    /*if (P.dt == P.remaining)
+        printf ("Comecando ");
     else
-        //printf ("Continuando ");
+        printf ("Continuando ");*/
     /*printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);*/
+    if (debug)
+        fprintf(stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
     time (&Tstop);
     tDelta = difftime (Tstop, Tstart);
 
@@ -263,6 +268,8 @@ void *ThreadAdd3 (void *arg) {
     }
     point->remaining = point->remaining - tDelta;
     /*printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);*/
+    if (debug)
+        fprintf(stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
     free (arg);
     pthread_mutex_unlock (&mutex);
     return NULL;
@@ -378,7 +385,7 @@ void LiberarVetorQuantuns (float *quantuns) {
 
 void MultiplasFIlas (process *routine, int Nprocs) {
     queue Q, NQ;
-    int i = 0, a, execs = 0, *execflag, entraram = 0;
+    int i = 0, a, execs = 0, *execflag, entraram = 0, contextswich = 0;
     process *P, *aux;
     time_t start, stop;
     time (&start);
@@ -388,12 +395,15 @@ void MultiplasFIlas (process *routine, int Nprocs) {
 
     float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
     Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
+    printf("%d %d\n", execs, Nprocs);
     while (execs < Nprocs) { /*não terminei de executar todos*/
         time (&stop); /*checa tempo*/
         Delta = difftime (stop, start);
         /*existe(m) processo(s) da rotina para entrar em f0*/
         while (i < Nprocs && routine[i].t_begin <= Delta) {
             /*coloca novos processos em f0*/
+            if (debug)
+                fprintf (stderr, "%f s > Chegou %s no sistema: %f %s %f %f\n", Delta, routine[i].name, routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline);
             printf ("%f s > mandando %s %d para a fila inicial\n", Delta, routine[i].name, routine[i].id);
             Qs[0] = to_Queue (routine[i], Qs[0]);
             for (a = 0; a < NUMBER_OF_QUEUES; a++) {
@@ -413,12 +423,11 @@ void MultiplasFIlas (process *routine, int Nprocs) {
             if (!is_Empty(Qs[filaatual])) { /* assumindo que NUMBER_OF_QUEUES > 0 */
                 achou = 1;
                 /* faz unqueue e executa aquele quantum */
-                P = malloc ( sizeof (process));
+                P = malloc (sizeof (process));
                 *P = Unqueue (Qs[filaatual]);
-                strcpy (name, P->name);
+                //strcpy (name, P->name);
                 P->quantum = quantuns[filaatual];
-
-                printf ("%f s > comeca a rodar %s %d por %f e tem %f tempo para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->deadline);
+                printf ("%f s > comeca a rodar %s %d por %f e tem ate %f para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->t_begin + P->deadline);
                 pthread_create (&P->tID, NULL, ThreadAdd3, P);
                 pthread_join(P->tID, NULL);
                 time (&stop);
@@ -427,6 +436,8 @@ void MultiplasFIlas (process *routine, int Nprocs) {
 
                  /*se não terminar passar pra próxima fila */
                 if (P->remaining > 0) {
+                    //ocorre troca de contexto
+                    contextswich++;
                     if (filaatual != (NUMBER_OF_QUEUES - 1)) {
                         filaatual++;
                         P->quantum = quantuns[filaatual];
@@ -439,13 +450,20 @@ void MultiplasFIlas (process *routine, int Nprocs) {
                     }
                     for (a = 0; a < NUMBER_OF_QUEUES; a++) {
                         printf ("Fila %d ", a);
-                        Elements2(Qs[a], routine);
+                        Elements2 (Qs[a], routine);
                     }
                 } else {
+                    if (Delta > (P->t_begin + P->deadline)) {
+                        printf ("Excedeu deadline %s %f %f \n", routine[P->id].name, Delta, (P->t_begin + P->deadline));
+
+                    }
                     printf("%f s > Acabou %s %d\n", Delta, routine[P->id].name, P->id);
+                    if (debug)
+                        fprintf (stderr, "%f s > Finalizou: %s %f %f\n", Delta, routine[P->id].name, Delta, Delta - P->t_begin);
+                    fprintf (saida, "%s %f %f\n", routine[P->id].name, Delta, Delta - P->t_begin);
                     for (a = 0; a < NUMBER_OF_QUEUES; a++) {
                         printf ("Fila %d ", a);
-                        Elements2(Qs[a], routine);
+                        Elements2 (Qs[a], routine);
                     }
                     execs++;
                 }
@@ -454,7 +472,9 @@ void MultiplasFIlas (process *routine, int Nprocs) {
             }
         }
     }
-
+    if (debug)
+        fprintf(stderr, "%d\n", contextswich);
+    fprintf(saida, "%d\n", contextswich);
 }
 
 int main (int argc, char **argv) {
@@ -463,21 +483,38 @@ int main (int argc, char **argv) {
     process routine[1000];
     unsigned long int time;
 
-    trace = fopen ("trace2.txt", "r");
+    debug = 0;
+
+    if (argc > 4 && strcmp(argv[4], "d") == 0)
+        debug = 1;
+
+    trace = fopen (argv[2], "r");
+    saida = fopen (argv[3], "w");
     
     if (trace == NULL){
         printf ("Problemas na abertura do arquivo\n");
         exit (1);
     }
     for(i = 0; fscanf (trace, "%f %s %f %f", &routine[i].t_begin, routine[i].name, &routine[i].dt, &routine[i].deadline) != EOF; i++) {
-        //printf ("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
+        //printf ("%f %s %f %f\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
         routine[i].flag = 1;
         routine[i].remaining = routine[i].dt;
         routine[i].self = NULL;
         routine[i].id = i;
     }
-    
-    MultiplasFIlas (routine, i);
+    switch (atoi (argv[1])) {
+        case 1:
+            FCFS (routine, i);
+            break;
+        case 2:
+            SRT (routine, i);
+            break;
+        case 3:
+            MultiplasFIlas (routine, i);
+            break;
+        default:
+            printf ("Escalonador invalido.\n");
+    }
 
     pthread_exit (NULL);
     return 0;
