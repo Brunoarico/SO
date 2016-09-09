@@ -1,28 +1,18 @@
 mallocquei o vetor de quantuns de tam 4
 2.000000 4.000000 8.000000 16.000000 
-mallocquei o Qs em 4
-A
-B
-A
-B
-A
-B
-A
-B
-acabou
 0.000000 s > mandando Sonic 0 para a fila inicial
 Fila 0 Sonic 0 -> 
 Fila 1 
 Fila 2 
 Fila 3 
-0.000000 s > começa a rodar Sonic 0 por 2.000000 e tem 10.000000 tempo para executar
-Começando 2.000000 s > Tempo restante de Sonic 0: 3.000000
+0.000000 s > comeca a rodar Sonic 0 por 2.000000 e tem 10.000000 tempo para executar
+Comecando 2.000000 s > Tempo restante de Sonic 0: 3.000000
 2.000000 s > Ja chegou o Sonic 0! na fila 1
 Fila 0 
 Fila 1 Sonic 0 -> 
 Fila 2 
 Fila 3 
-2.000000 s > começa a rodar Sonic 0 por 4.000000 e tem 10.000000 tempo para executar
+2.000000 s > comeca a rodar Sonic 0 por 4.000000 e tem 10.000000 tempo para executar
 Continuando 6.000000 s > Tempo restante de Sonic 0: -1.000000
 6.000000 s > Acabou Sonic 0
 Fila 0 
@@ -39,8 +29,8 @@ Fila 0 Goku 1 -> Megaman 2 ->
 Fila 1 
 Fila 2 
 Fila 3 
-6.000000 s > começa a rodar Goku 1 por 2.000000 e tem 20.000000 tempo para executar
-Começando 8.000000 s > Tempo restante de Goku 1: 6.000000
+6.000000 s > comeca a rodar Goku 1 por 2.000000 e tem 20.000000 tempo para executar
+Comecando 8.000000 s > Tempo restante de Goku 1: 6.000000
 8.000000 s > Ja chegou o Goku 1! na fila 1
 Fila 0 Megaman 2 -> 
 Fila 1 Goku 1 -> 
@@ -51,8 +41,8 @@ Fila 0 Megaman 2 -> Obi_Wan 3 ->
 Fila 1 Goku 1 -> 
 Fila 2 
 Fila 3 
-8.000000 s > começa a rodar Megaman 2 por 2.000000 e tem 10.000000 tempo para executar
-Começando 10.000000 s > Tempo restante de Megaman 2: 3.000000
+8.000000 s > comeca a rodar Megaman 2 por 2.000000 e tem 10.000000 tempo para executar
+Comecando 10.000000 s > Tempo restante de Megaman 2: 3.000000
 10.000000 s > Ja chegou o Megaman 2! na fila 1
 Fila 0 Obi_Wan 3 -> 
 Fila 1 Goku 1 -> Megaman 2 -> 
@@ -63,8 +53,8 @@ Fila 0 Obi_Wan 3 -> Iron_Man 4 ->
 Fila 1 Goku 1 -> Megaman 2 -> 
 Fila 2 
 Fila 3 
-10.000000 s > começa a rodar Obi_Wan 3 por 2.000000 e tem 15.000000 tempo para executar
-Começando 12.000000 s > Tempo restante de Obi_Wan 3: 2.000000
+10.000000 s > comeca a rodar Obi_Wan 3 por 2.000000 e tem 15.000000 tempo para executar
+Comecando 12.000000 s > Tempo restante de Obi_Wan 3: 2.000000
 12.000000 s > Ja chegou o Obi_Wan 3! na fila 1
 Fila 0 Iron_Man 4 -> 
 Fila 1 Goku 1 -> Megaman 2 -> Obi_Wan 3 -> 
@@ -75,56 +65,56 @@ Fila 0 Iron_Man 4 -> Sub_Zero 5 ->
 Fila 1 Goku 1 -> Megaman 2 -> Obi_Wan 3 -> 
 Fila 2 
 Fila 3 
-12.000000 s > começa a rodar Iron_Man 4 por 2.000000 e tem 3.000000 tempo para executar
-Começando 14.000000 s > Tempo restante de Iron_Man 4: -1.000000
+12.000000 s > comeca a rodar Iron_Man 4 por 2.000000 e tem 3.000000 tempo para executar
+Comecando 14.000000 s > Tempo restante de Iron_Man 4: -1.000000
 14.000000 s > Acabou Iron_Man 4
 Fila 0 Sub_Zero 5 -> 
 Fila 1 Goku 1 -> Megaman 2 -> Obi_Wan 3 -> 
 Fila 2 
 Fila 3 
-14.000000 s > começa a rodar Sub_Zero 5 por 2.000000 e tem 30.000000 tempo para executar
-Começando 16.000000 s > Tempo restante de Sub_Zero 5: 8.000000
+14.000000 s > comeca a rodar Sub_Zero 5 por 2.000000 e tem 30.000000 tempo para executar
+Comecando 16.000000 s > Tempo restante de Sub_Zero 5: 8.000000
 16.000000 s > Ja chegou o Sub_Zero 5! na fila 1
 Fila 0 
 Fila 1 Goku 1 -> Megaman 2 -> Obi_Wan 3 -> Sub_Zero 5 -> 
 Fila 2 
 Fila 3 
-16.000000 s > começa a rodar Goku 1 por 4.000000 e tem 20.000000 tempo para executar
+16.000000 s > comeca a rodar Goku 1 por 4.000000 e tem 20.000000 tempo para executar
 Continuando 20.000000 s > Tempo restante de Goku 1: 2.000000
 20.000000 s > Ja chegou o Goku 1! na fila 2
 Fila 0 
 Fila 1 Megaman 2 -> Obi_Wan 3 -> Sub_Zero 5 -> 
 Fila 2 Goku 1 -> 
 Fila 3 
-20.000000 s > começa a rodar Megaman 2 por 4.000000 e tem 10.000000 tempo para executar
+20.000000 s > comeca a rodar Megaman 2 por 4.000000 e tem 10.000000 tempo para executar
 Continuando 24.000000 s > Tempo restante de Megaman 2: -1.000000
 24.000000 s > Acabou Megaman 2
 Fila 0 
 Fila 1 Obi_Wan 3 -> Sub_Zero 5 -> 
 Fila 2 Goku 1 -> 
 Fila 3 
-24.000000 s > começa a rodar Obi_Wan 3 por 4.000000 e tem 15.000000 tempo para executar
+24.000000 s > comeca a rodar Obi_Wan 3 por 4.000000 e tem 15.000000 tempo para executar
 Continuando 28.000000 s > Tempo restante de Obi_Wan 3: -2.000000
 28.000000 s > Acabou Obi_Wan 3
 Fila 0 
 Fila 1 Sub_Zero 5 -> 
 Fila 2 Goku 1 -> 
 Fila 3 
-28.000000 s > começa a rodar Sub_Zero 5 por 4.000000 e tem 30.000000 tempo para executar
+28.000000 s > comeca a rodar Sub_Zero 5 por 4.000000 e tem 30.000000 tempo para executar
 Continuando 32.000000 s > Tempo restante de Sub_Zero 5: 4.000000
 32.000000 s > Ja chegou o Sub_Zero 5! na fila 2
 Fila 0 
 Fila 1 
 Fila 2 Goku 1 -> Sub_Zero 5 -> 
 Fila 3 
-32.000000 s > começa a rodar Goku 1 por 8.000000 e tem 20.000000 tempo para executar
+32.000000 s > comeca a rodar Goku 1 por 8.000000 e tem 20.000000 tempo para executar
 Continuando 40.000000 s > Tempo restante de Goku 1: -6.000000
 40.000000 s > Acabou Goku 1
 Fila 0 
 Fila 1 
 Fila 2 Sub_Zero 5 -> 
 Fila 3 
-40.000000 s > começa a rodar Sub_Zero 5 por 8.000000 e tem 30.000000 tempo para executar
+40.000000 s > comeca a rodar Sub_Zero 5 por 8.000000 e tem 30.000000 tempo para executar
 Continuando 48.000000 s > Tempo restante de Sub_Zero 5: -4.000000
 48.000000 s > Acabou Sub_Zero 5
 Fila 0 
