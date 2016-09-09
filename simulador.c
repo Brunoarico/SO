@@ -8,17 +8,19 @@
 
 pthread_mutex_t mutex;
 float remaining_time = 0;
+float Delta;
+time_t start;
 
 typedef char* string;
 
 typedef struct _process {
     char name[100];
-    float t_begin;
-    float dt;
-    float remaining;
-    float deadline;
-    int flag;
-    int exist;
+    float t_begin;    //momento que chega
+    float dt;         // quanto dura
+    float remaining;  // quanto resta
+    float deadline;   // limite
+    int flag;         // flag de ativo
+    struct _process *self;        // ja iniciado
     pthread_t tID;
 } process;
 
@@ -82,20 +84,6 @@ queue to_Queue (process this, queue Q) {
     Q->prox = new;
     Q->proc = this;
     return new;
-}
-
-void mark_exec (queue Q, int val) {
-    process p;
-    cell *this;
-    if (!is_Empty (Q)){
-	this = Q->prox;
-	p = this->proc;
-	this->proc.exist = val;
-    }
-    else {
-	printf ("Nao é possivel marcar vazio!\n");
-	exit (1);
-    }
 }
     
     
@@ -181,51 +169,50 @@ void FCFS (process *routine, int Nprocs) {
 void *ThreadAdd2 (void *arg) {
     int i = 0;
     process P, *point;
-    time_t Tstart, Tstop, pause;
+    float begin, Tstart;
     P = *(process*) arg;
     point = (process*) arg;
-    time(&Tstart);
     
+    Tstart = begin = Delta;
+    
+    //printf("endereço da thread %s: %d\n", P.name, point);
     while (P.remaining > 0) {
-	
 	if (point->flag) {
-	    remaining_time = P.remaining = P.dt-difftime(pause,Tstart);
+	    remaining_time = P.remaining = P.dt - (Delta - begin);
 	    i = i - 3 * i++;
-	    time(&pause);
-	    //printf("thread %s falta %f\n",P.name, P.remaining);
+	    //printf("ligada thread %s falta %f\n",P.name, P.remaining);
 	}
-	//printf("%s point flag adr %d\n",P.name, &point->flag);
+	else begin = Delta; //printf("pausado %s falta %f flag = %d\n",P.name, P.remaining, point->flag);
     }
-    time(&Tstop);
     
-    printf("Finalizado %s em %f segundos, tempo de parede %f. \n", P.name, difftime(Tstop, Tstart),difftime(pause, Tstart));
+    printf("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n",Delta, P.name, P.dt, Delta - Tstart);
     free(arg);
-    
+    return (void*) 1;
 }
 process *initiate_thread (process p) {
-    process *P;
-    p.exist = 1;                                               //agora ele existe
+    process *P;                                             
     P = malloc (sizeof(process));                               //aloca um novo P para passar para a thread
     *P = p;
-    printf("Criando: %s \n", P->name);
+    P->self = P;                                                //agora ele existe
+    //printf("Criando: %s\n", P->name);
     pthread_create (&P->tID, NULL, ThreadAdd2, P);              //cria a thread
     remaining_time = P->remaining;                                     //atualiza o tempo de quem esta em execução
     return P;                                                   //retorna um ponteiro para quem esta executando
 }
 
 void pause_thread (process *p) {
-    if (p->exist) {
+    if (p->self != NULL) {
 	p->flag = 0;
-	printf("Pausou thread %s\n", p->name);
+	//printf("Pausou thread %s\n", p->name);
     }
     else
 	printf ("Pausou thread inexistente\n");
 }
 
 void continue_thread (process *p) {
-    if (p->exist){
+    if (p->self != NULL){
 	p->flag = 1;
-	printf("Continuando thread %s\n", p->name);
+	//printf("Continuando thread %s\n", p->name);
     }
     else
 	printf ("Continuou thread inexistente\n");
@@ -233,120 +220,59 @@ void continue_thread (process *p) {
 
 
 int is_thread_exist (process *p) {
-    return p->exist;
+    if (p->self != NULL) return 1;
+    else return 0;
 }
 
 void SRT (process *routine, int Nprocs) {
     queue Q, NQ;
-    int i, execs = 0, *execflag;
-    double delta;
+    void *ret;
+    int i, execs = 0;
     process *P, *EXE = NULL, aux;
-    time_t start, stop;
+    time_t stop;
     time(&start);
     Q = NewQueue ();
     
-    while (execs < Nprocs || !is_Empty (Q)) {
+    while (!is_Empty(Q) || remaining_time || execs < Nprocs) {
 	time(&stop);
+	Delta = difftime (stop, start);                    // mede o tempo
 	for (i = execs; i < Nprocs; i++) {
-	    delta = difftime (stop, start);                    // mede o tempo
-	    if (routine[i].t_begin <= delta) {                 // se algum processo chegar 
+	    if (routine[i].t_begin <= Delta) {                 // se algum processo chegar 
 		execs++;
-		//printf("Chegou %s em %f s\n", routine[i].name, delta);
 		if (routine[i].remaining < remaining_time) {        // se seu tempo for menor que o restante
-		    printf("%s passou na frente\n", routine[i].name);
 		    if(EXE != NULL){                           // se tiver alguem rodando antes
-			printf("Mandando %s para a fila\n", EXE->name);
 			pause_thread(EXE);                     // pausa ele
+			EXE->remaining = remaining_time;
 			Q = to_PQueue(*EXE, Q);                // e manda para a fila de volta
 			Elements(Q);
 		    }
+		    printf("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, remaining_time); 
 		    EXE = initiate_thread(routine[i]);          // inicia o cara que tem urgencia
 		}
 		else {                                           //do contrario so manda para a fila
-		    printf("mandando %s para a fila sem urgencia\n", routine[i].name); 
+		    printf("%f s > %s chegou e foi para a fila dt = %f\n", Delta, routine[i].name, routine[i].remaining);  
 		    Q = to_PQueue (routine[i], Q);
 		}
 	    }
 	}
 	
-
-	
 	if(!is_Empty(Q) && !remaining_time) {                                    // se houver alguem na fila
 	    EXE = NULL;
-	    Elements(Q);
 	    aux = Unqueue(Q);                                 // tira da fila
 	    if (is_thread_exist(&aux)) {                      // se a thread ja existir
-		printf("Ja existe %s\n", aux.name);
-		*EXE = aux;                                   // faz dele o que esta rodando
-		continue_thread(&aux);                         // e manda ele continuar
-	    }
-	    else EXE = initiate_thread(aux);
-	}
-    }
-}
-
-void SRT2 (process *routine, int Nprocs) {
-    queue Q, NQ;
-    int i, execs = 0, *execflag;
-    double delta;
-    process *P, *EXE;
-    time_t start, stop;
-    time(&start);
-    Q = NewQueue ();
-    NQ = Q->prox;
-
-    while (execs < Nprocs || !is_Empty (Q)) {
-	time(&stop);
-	for (i = execs; i < Nprocs; i++) {
-	    delta = difftime(stop, start);
-	    if (routine[i].t_begin <= delta) {
-		execs++;
-		Q = to_PQueue (routine[i], Q);
-		if (Q->prox != NQ) { //se muda a frente da fila
-		    Elements(Q);
-		    NQ = Q->prox; // atualiza a frente da fila
-		    
-		    if(peek(Q).exist == 0 ) {
-			mark_exec(Q, 1);
-			P = malloc ( sizeof (process)); //aloca um espaço para o processo
-			*P = peek(Q); //pega o primeiro
-			printf("Criando: %s \n", P->name);
-			pthread_create (&P->tID, NULL, ThreadAdd2, P); //cria a thread
-			remaining_time = P->dt; //atualiza o tempo de duração dele
-
-			if(execs > 1){ // se existe thread anterior
-			    printf("pausando o %s\n", EXE->name);
-			    EXE->flag = 0; // para ela
-			}
-			EXE = P;
-
-		    }
-		}
-	    }
-	}
-	if (!is_Empty(Q) && remaining_time <= 0) { // se o processo terminiou e ha outros 
-	    Elements(Q);
-	    if(peek(Q).exist == 0){  // ve se o proximo ja existe
-		mark_exec(Q, 1);
-		P = malloc ( sizeof (process));
-		*P = peek(Q);
-		printf("Criando aqui: %s \n", P->name);
-		pthread_create (&P->tID, NULL, ThreadAdd2, P);
-		remaining_time = P->dt;
-		EXE = P;
+		printf("%f s > Volta a executar %s que tem ainda %f s para terminar\n", Delta, aux.name, aux.remaining);
+		EXE = aux.self;                                   // faz dele o que esta rodando
+		continue_thread(EXE);                         // e manda ele continuar
 	    }
 	    else {
-		printf("%s continua\n", peek(Q).name);
-		*P = Unqueue(Q);
-		//printf("adr EXE flag %d\n", &EXE->flag);
-		EXE = P;
-		EXE->flag = 1;
+		printf("%f s > Começa a executar %s\n", Delta, aux.name);
+		EXE = initiate_thread(aux);
 	    }
+	    Elements(Q);
 	}
-
-    }    
+    }
+    printf("Fim!\n");
 }
-
 
 int main() {
     int i, j;
@@ -364,7 +290,7 @@ int main() {
         //printf ("%d %s %d %d\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
 	routine[i].flag = 1;
 	routine[i].remaining = routine[i].dt;
-	routine[i].exist = 0;
+	routine[i].self = NULL;
     }
     
     SRT (routine, i);
