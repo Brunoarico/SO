@@ -69,7 +69,7 @@ void LiberarVetorQuantuns (float *quantuns) {
     free (quantuns);
 }
 
-void MultiplasFIlas (process *routine, int Nprocs) {
+void MultiplasFIlas (process *routine, int Nprocs, int debug) {
     int i = 0, a, execs = 0, entraram = 0, contextswich = 0;
     process *P;
     time_t start, stop;

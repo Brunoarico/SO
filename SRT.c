@@ -63,7 +63,7 @@ int is_thread_exist (process *p) {
     else return 0;
 }
 
-void SRT (process *routine, int Nprocs) {
+void SRT (process *routine, int Nprocs, int debug) {
     queue Q;
     int i, execs = 0;
     process *P, *EXE = NULL, aux;

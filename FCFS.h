@@ -14,6 +14,6 @@
 
 
 
-void FCFS (process *routine, int Nprocs);
+void FCFS (process *routine, int Nprocs, int debug);
 
 #endif

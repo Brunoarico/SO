@@ -15,7 +15,7 @@
 
 
 
-void MultiplasFIlas (process *routine, int Nprocs);
+void MultiplasFIlas (process *routine, int Nprocs, int debug);
 
 #endif
 

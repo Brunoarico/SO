@@ -25,7 +25,7 @@ void *ThreadAdd (void *arg) {
 }
 
 
-void FCFS (process *routine, int Nprocs) {
+void FCFS (process *routine, int Nprocs, int debug) {
     queue Q;
     int i, execs = 0;
     unsigned int t_start, delta;
