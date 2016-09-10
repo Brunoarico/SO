@@ -12,6 +12,6 @@
 #include "fila.h"
 #include "globals.h"
 
-void SRT (process *routine, int Nprocs, int debug);
+void SRT (process *routine, int Nprocs);
 
 #endif

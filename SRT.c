@@ -12,17 +12,50 @@ void *ThreadAdd2 (void *arg) {
     point = (process*) arg;
     
     Tstart = begin = Delta;
+
+    //we can set one or more bits here, each one representing a single CPU
+    cpu_set_t cpuset; 
+
+    //the CPU we whant to use
+    int cpu = 0;
+    int pausado = 1;
+
+    CPU_ZERO (&cpuset);       //clears the cpuset
+    CPU_SET (cpu , &cpuset); //set CPU 0 on cpuset
+
+
+    /*
+    * cpu affinity for the calling thread 
+    * first parameter is the pid, 0 = calling thread
+    * second parameter is the size of your cpuset
+    * third param is the cpuset in which your thread will be
+    * placed. Each bit represents a CPU
+    */
+    sched_setaffinity (0, sizeof (cpuset), &cpuset);
+
     
     //printf("endereco da thread %s: %d\n", P.name, point);
     while (P.remaining > 0) {
         if (point->flag) {
+            if (pausado && debug) {
+                fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
+                pausado = 0;
+            }
             remaining_time = P.remaining = P.dt - (Delta - begin);
             i = i - 3 * i++;
             //printf("ligada thread %s falta %f\n",P.name, P.remaining);
-        } else 
+        } else {
+            if (debug) {
+                pausado = 1;
+                fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
+            }
             begin = Delta; //printf("pausado %s falta %f flag = %d\n",P.name, P.remaining, point->flag);
+        }
     }
-    
+    if (debug) {
+        fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
+        fprintf (stderr, "%f s > Finalizou: %s %f %f\n", Delta, P.name, Delta, Delta - Tstart);
+    }
     printf ("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n", Delta, P.name, P.dt, Delta - Tstart);
     free (arg);
     return (void*) 1;
@@ -63,9 +96,9 @@ int is_thread_exist (process *p) {
     else return 0;
 }
 
-void SRT (process *routine, int Nprocs, int debug) {
+void SRT (process *routine, int Nprocs) {
     queue Q;
-    int i, execs = 0;
+    int i, execs = 0, contextswitch = 0;
     process *P, *EXE = NULL, aux;
     time_t stop;
     time (&start);
@@ -78,9 +111,8 @@ void SRT (process *routine, int Nprocs, int debug) {
             if (routine[i].t_begin <= Delta) {                 // se algum processo chegar 
                 execs++;
                 if (routine[i].remaining < remaining_time) {        // se seu tempo for menor que o restante
-		    
-		    if (debug)
-			fprintf (stderr, "%f s > Chegou %s no sistema: %f %s %f %f\n", Delta, routine[i].name, routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline);
+		            if (debug)
+			             fprintf (stderr, "%f s > Chegou %s no sistema: %f %s %f %f\n", Delta, routine[i].name, routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline);
 		    
                     if(EXE != NULL){                           // se tiver alguem rodando antes
                         pause_thread (EXE);                     // pausa ele
@@ -88,6 +120,7 @@ void SRT (process *routine, int Nprocs, int debug) {
                         Q = to_PQueue (*EXE, Q);                // e manda para a fila de volta
                         Elements(Q);
                     }
+                    contextswitch++;
                     printf ("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, remaining_time); 
                     EXE = initiate_thread (routine[i]);          // inicia o cara que tem urgencia
                 } else {                                           //do contrario so manda para a fila
@@ -111,5 +144,8 @@ void SRT (process *routine, int Nprocs, int debug) {
             Elements (Q);
         }
     }
+    if (debug)
+        fprintf(stderr, "%d\n", contextswitch);
+    fprintf(saida, "%d\n", contextswitch);
     printf ("Fim!\n");
 }

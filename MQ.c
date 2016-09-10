@@ -19,8 +19,8 @@ void *ThreadAdd3 (void *arg) {
     //the CPU we whant to use
     int cpu = 0;
 
-    CPU_ZERO(&cpuset);       //clears the cpuset
-    CPU_SET( cpu , &cpuset); //set CPU 0 on cpuset
+    CPU_ZERO (&cpuset);       //clears the cpuset
+    CPU_SET (cpu , &cpuset); //set CPU 0 on cpuset
 
 
     /*
@@ -30,7 +30,7 @@ void *ThreadAdd3 (void *arg) {
     * third param is the cpuset in which your thread will be
     * placed. Each bit represents a CPU
     */
-    sched_setaffinity(0, sizeof(cpuset), &cpuset);
+    sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
     pthread_mutex_lock (&mutex);
     time (&Tstart);
@@ -41,7 +41,7 @@ void *ThreadAdd3 (void *arg) {
         printf ("Continuando ");*/
     /*printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);*/
     if (debug)
-        fprintf(stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
+        fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
     time (&Tstop);
     tDelta = difftime (Tstop, Tstart);
 
@@ -53,36 +53,24 @@ void *ThreadAdd3 (void *arg) {
     point->remaining = point->remaining - tDelta;
     /*printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);*/
     if (debug)
-        fprintf(stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
+        fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
     free (arg);
     pthread_mutex_unlock (&mutex);
     return NULL;
-}
-
-
-
-process *initiate_thread2 (process p) {
-    process *P;                                             //agora ele existe
-    P = malloc (sizeof (process));                               //aloca um novo P para passar para a thread
-    *P = p;
-    printf ("Criando: %s \n", P->name);
-    pthread_create (&P->tID, NULL, ThreadAdd3, P);              //cria a thread
-    remaining_time = P->remaining;                                     //atualiza o tempo de quem esta em execucão
-    return P;                                                   //retorna um ponteiro para quem esta executando
 }
 
 float *GerarVetorQuantuns (int size) {
     int i;
     float pot = 1;
     float *quantuns = malloc (size * sizeof (float));
-    printf ("mallocquei o vetor de quantuns de tam %d\n", size);
+    //printf ("mallocquei o vetor de quantuns de tam %d\n", size);
     for (i = 0; i < size; i++) {
         pot = pot * 2;
         quantuns[i] = pot;
     }
-    for (i = 0; i < size; i++)
+    /*for (i = 0; i < size; i++)
         printf("%f ", quantuns[i]);
-    printf("\n");
+    printf("\n");*/
     return quantuns;
 }
 
@@ -90,8 +78,8 @@ void LiberarVetorQuantuns (float *quantuns) {
     free (quantuns);
 }
 
-void MultiplasFIlas (process *routine, int Nprocs, int debug) {
-    int i = 0, a, execs = 0, entraram = 0, contextswich = 0;
+void MultiplasFIlas (process *routine, int Nprocs) {
+    int i = 0, a, execs = 0, entraram = 0, contextswitch = 0;
     process *P;
     time_t start, stop;
     int filaatual = 0;
@@ -100,7 +88,7 @@ void MultiplasFIlas (process *routine, int Nprocs, int debug) {
     float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
     time (&start);
     Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
-    printf("%d %d\n", execs, Nprocs);
+    //printf("%d %d\n", execs, Nprocs);
     while (execs < Nprocs) { /*não terminei de executar todos*/
         time (&stop); /*checa tempo*/
         Delta = difftime (stop, start);
@@ -142,7 +130,7 @@ void MultiplasFIlas (process *routine, int Nprocs, int debug) {
                  /*se não terminar passar pra próxima fila */
                 if (P->remaining > 0) {
                     //ocorre troca de contexto
-                    contextswich++;
+                    contextswitch++;
                     if (filaatual != (NUMBER_OF_QUEUES - 1)) {
                         filaatual++;
                         P->quantum = quantuns[filaatual];
@@ -178,6 +166,6 @@ void MultiplasFIlas (process *routine, int Nprocs, int debug) {
         }
     }
     if (debug)
-        fprintf(stderr, "%d\n", contextswich);
-    fprintf(saida, "%d\n", contextswich);
+        fprintf(stderr, "%d\n", contextswitch);
+    fprintf(saida, "%d\n", contextswitch);
 }

@@ -34,13 +34,13 @@ int main (int argc, char **argv) {
     }
     switch (atoi (argv[1])) {
         case 1:
-            FCFS (routine, i, debug);
+            FCFS (routine, i);
             break;
         case 2:
-            SRT (routine, i, debug);
+            SRT (routine, i);
             break;
         case 3:
-            MultiplasFIlas (routine, i, debug);
+            MultiplasFIlas (routine, i);
             break;
         default:
             printf ("Escalonador invalido.\n");
