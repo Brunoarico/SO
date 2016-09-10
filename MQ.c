@@ -13,6 +13,25 @@ void *ThreadAdd3 (void *arg) {
     P = *(process*) arg;
     point = (process*) arg;
 
+    //we can set one or more bits here, each one representing a single CPU
+    cpu_set_t cpuset; 
+
+    //the CPU we whant to use
+    int cpu = 0;
+
+    CPU_ZERO(&cpuset);       //clears the cpuset
+    CPU_SET( cpu , &cpuset); //set CPU 0 on cpuset
+
+
+    /*
+    * cpu affinity for the calling thread 
+    * first parameter is the pid, 0 = calling thread
+    * second parameter is the size of your cpuset
+    * third param is the cpuset in which your thread will be
+    * placed. Each bit represents a CPU
+    */
+    sched_setaffinity(0, sizeof(cpuset), &cpuset);
+
     pthread_mutex_lock (&mutex);
     time (&Tstart);
 
@@ -39,6 +58,8 @@ void *ThreadAdd3 (void *arg) {
     pthread_mutex_unlock (&mutex);
     return NULL;
 }
+
+
 
 process *initiate_thread2 (process p) {
     process *P;                                             //agora ele existe
