@@ -1,8 +1,8 @@
 #include "MQ.h"
 
-static pthread_mutex_t mutex;
-static float remaining_time = 0;
-static float Delta;
+pthread_mutex_t mutex;
+float remaining_time = 0;
+float Delta;
 
 void *ThreadAdd3 (void *arg) {
     int i = 0;
@@ -100,7 +100,8 @@ void MultiplasFIlas (process *routine, int Nprocs, int debug) {
 
         /* procura quem é o prox processo a executar */
 
-        
+        achou = 0;
+        filaatual = 0;
 
         while (entraram != 0 && !achou) {
             if (!is_Empty(Qs[filaatual])) { /* assumindo que NUMBER_OF_QUEUES > 0 */
