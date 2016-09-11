@@ -1,9 +1,9 @@
 CFLAGS = -g -Wall -pthread
 
-default : simulador terminal
+default : simulador terminal final
 
-simulador : FCFS.o fila.o MQ.o SRT.o structs.o globals.o simulador.o
-	$(CC) $(CFLAGS) FCFS.o fila.o MQ.o SRT.o simulador.o -o sim
+simulador : FCFS.o fila.o MQ.o SRT.o structs.o globals.o simulador.o cronometer.o
+	$(CC) $(CFLAGS) FCFS.o fila.o MQ.o SRT.o simulador.o cronometer.o -o sim
 
 terminal: ep1sh.o
 	$(CC) $(CFLAGS) ep1sh.o -o ep1 -lreadline
@@ -22,8 +22,14 @@ structs.o : structs.h
 	$(CC) $(CFLAGS) -c $^
 globals.o : globals.h
 	$(CC) $(CFLAGS) -c $^
+cronometer.o : cronometer.c cronometer.h
+	$(CC) $(CFLAGS) -c $^
 simulador.o : simulador.c
 	$(CC) $(CFLAGS) -c $^
+
+final:
+	$(RM) *.o
+	find . -name "*.gch" -exec $(RM) -rf {} \;
 
 clear:
 	$(RM) ep1

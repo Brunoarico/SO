@@ -2,7 +2,7 @@
 #define STRUCTS_H
 
 #include <pthread.h>
-
+#include <time.h>
 
 typedef char* string;
 
@@ -25,5 +25,7 @@ typedef struct _cell {
 } cell;
 
 typedef cell* queue;
+
+typedef struct timespec tempo;
 
 #endif

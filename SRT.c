@@ -2,7 +2,7 @@
 
 static float Delta;
 static float Remaining_time = 0;
-static time_t start;
+static tempo start={0,0};
 
 void *ThreadAdd2 (void *arg) {
     int i = 1;
@@ -36,6 +36,7 @@ void *ThreadAdd2 (void *arg) {
     
     //printf("endereco da thread %s: %d\n", P.name, point);
     while (P.remaining > 0) {
+	//printf("Remaining_time %f\n", Remaining_time);
         if (point->flag) {
             if (pausado && debug) {
                 fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
@@ -43,14 +44,13 @@ void *ThreadAdd2 (void *arg) {
             }
             Remaining_time = P.remaining = P.dt - (Delta - begin);
             i = i - 3 * i;
-            //printf("ligada thread %s falta %f flag %d\n",P.name, P.remaining, point->flag);
         }
 
 	else {
             if (debug && !pausado) {
                 pausado = 1;
                 fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
-		//printf("desligada a thread %s tempo %f flag = %d\n",P.name, Delta, point->flag);
+		
             }
             begin = Delta;
         }
@@ -60,6 +60,7 @@ void *ThreadAdd2 (void *arg) {
         fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
         fprintf (stderr, "%f s > Finalizou: %s %f %f\n", Delta, P.name, Delta, Delta - Tstart);
     }
+    Remaining_time = 0;
     //printf ("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n", Delta, P.name, P.dt, Delta - Tstart);
     free (arg);
     return (void*) 1;
@@ -104,13 +105,14 @@ void SRT (process *routine, int Nprocs) {
     queue Q;
     int i, execs = 0, contextswitch = 0;
     process *EXE = NULL, aux;
-    time_t stop;
-    time (&start);
+    tempo stop={0,0};
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Q = NewQueue ();
     
     while (!is_Empty (Q) || Remaining_time || execs < Nprocs) {
-        time (&stop);
-        Delta = difftime (stop, start);                    // mede o tempo
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+	//printf("Tempo = %.5f\n", diff(stop, start));
+        Delta = diff(stop, start);                    // mede o tempo
         for (i = execs; i < Nprocs; i++) {
             if (routine[i].t_begin <= Delta) {                 // se algum processo chegar 
                 execs++;
@@ -133,8 +135,9 @@ void SRT (process *routine, int Nprocs) {
                 }
             }
         }
-        
+       
         if (!is_Empty (Q) && !Remaining_time) {                                    // se houver alguem na fila
+	    
             EXE = NULL;
             aux = Unqueue (Q);                                 // tira da fila
             if (is_thread_exist (&aux)) {                      // se a thread ja existir
@@ -149,7 +152,7 @@ void SRT (process *routine, int Nprocs) {
             Elements (Q);
         }
     }
-    pthread_join (aux.self->tID, NULL);
+    pthread_join(EXE->tID, NULL);
     if (debug)
         fprintf(stderr, "%d\n", contextswitch);
     

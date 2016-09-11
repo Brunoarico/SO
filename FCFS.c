@@ -1,12 +1,12 @@
 #include "FCFS.h"
 
 pthread_mutex_t mutex;
-time_t start;
+tempo start={0,0};
 float Delta;
 
 void *ThreadAdd (void *arg) {
     int i = 0;
-    time_t Tstart, Tstop;
+    tempo Tstart, Tstop;
     double tDelta;
 
     process P;
@@ -32,22 +32,22 @@ void *ThreadAdd (void *arg) {
     sched_setaffinity(0, sizeof(cpuset), &cpuset);
 
     pthread_mutex_lock (&mutex);
-    time (&Tstart);
+    clock_gettime(CLOCK_MONOTONIC, &Tstart);
 
     if (debug)
         fprintf(stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
-    time (&Tstop);
-    tDelta = difftime (Tstop, Tstart);
+    clock_gettime(CLOCK_MONOTONIC, &Tstop);
+    tDelta = diff (Tstop, Tstart);
 
     //printf ("Comecando %s para durar %f\n", P.name, P.dt);
     while (tDelta < P.dt) {
-        time (&Tstop);
-        tDelta = difftime (Tstop, Tstart);
+	clock_gettime(CLOCK_MONOTONIC, &Tstop);
+	tDelta = diff (Tstop, Tstart);
         i = i * 3*i + 4;
         //printf("%s %lu\n", P.name, (clock()-time)/CLOCKS_PER_SEC);
     }
-    time (&Tstop);
-    Delta = difftime (Tstop, start);
+    clock_gettime(CLOCK_MONOTONIC, &Tstop);
+    Delta = diff (Tstop, start);
     if (debug) {
         fprintf(stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
         fprintf(stderr, "%f s > Acabou %s\n", Delta, P.name);
@@ -62,14 +62,14 @@ void *ThreadAdd (void *arg) {
 void FCFS (process *routine, int Nprocs) {
     queue Q;
     int i = 0, execs = 0, contextswitch = 0;
-    time_t stop;
+    tempo stop;
     process *P;
     
-    time (&start);
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Q = NewQueue ();
     while (execs < Nprocs || !is_Empty (Q)) {
-        time (&stop);
-        Delta = difftime (stop, start);
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+        Delta = diff (stop, start);
 
         while (i < Nprocs && routine[i].t_begin <= Delta) {
             if (debug)

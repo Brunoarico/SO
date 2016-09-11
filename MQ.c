@@ -6,7 +6,7 @@ float Delta;
 
 void *ThreadAdd3 (void *arg) {
     int i = 0;
-    time_t Tstart, Tstop;
+    tempo Tstart, Tstop;
     double tDelta;
 
     process P, *point;   
@@ -33,7 +33,7 @@ void *ThreadAdd3 (void *arg) {
     sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
     pthread_mutex_lock (&mutex);
-    time (&Tstart);
+    clock_gettime(CLOCK_MONOTONIC, &Tstart);
 
     /*if (P.dt == P.remaining)
         printf ("Comecando ");
@@ -42,12 +42,12 @@ void *ThreadAdd3 (void *arg) {
     /*printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);*/
     if (debug)
         fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
-    time (&Tstop);
-    tDelta = difftime (Tstop, Tstart);
+    clock_gettime(CLOCK_MONOTONIC, &Tstop);
+    tDelta = diff (Tstop, Tstart);
 
     while (tDelta < P.quantum){
-        time (&Tstop);
-        tDelta = difftime (Tstop, Tstart);
+        clock_gettime(CLOCK_MONOTONIC, &Tstop);
+        tDelta = diff (Tstop, Tstart);
         i++;
     }
     point->remaining = point->remaining - tDelta;
@@ -81,17 +81,17 @@ void LiberarVetorQuantuns (float *quantuns) {
 void MultiplasFIlas (process *routine, int Nprocs) {
     int i = 0, a, execs = 0, entraram = 0, contextswitch = 0;
     process *P, aux;
-    time_t start, stop;
+    tempo start, stop;
     int filaatual = 0;
     int achou = 0;
     queue *Qs;
     float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
-    time (&start);
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
     //printf("%d %d\n", execs, Nprocs);
     while (execs < Nprocs) { /*não terminei de executar todos*/
-        time (&stop); /*checa tempo*/
-        Delta = difftime (stop, start);
+        clock_gettime(CLOCK_MONOTONIC, &stop); /*checa tempo*/
+        Delta = diff (stop, start);
         /*existe(m) processo(s) da rotina para entrar em f0*/
         while (i < Nprocs && routine[i].t_begin <= Delta) {
             /*coloca novos processos em f0*/
@@ -122,8 +122,8 @@ void MultiplasFIlas (process *routine, int Nprocs) {
                 printf ("%f s > comeca a rodar %s %d por %f e tem ate %f para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->t_begin + P->deadline);
                 pthread_create (&P->tID, NULL, ThreadAdd3, P);
                 pthread_join(P->tID, NULL);
-                time (&stop);
-                Delta = difftime (stop, start);
+                clock_gettime(CLOCK_MONOTONIC, &stop);
+                Delta = diff (stop, start);
                 printf("%f s > Tempo restante de %s %d: %f\n", Delta, routine[P->id].name, P->id, P->remaining);
 
                  /*se não terminar passar pra próxima fila */
