@@ -3,6 +3,6 @@
 #include <stdio.h>
 
 int debug;
-FILE *saida;
+FILE *saida, *debugfile;
 
 #endif

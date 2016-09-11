@@ -20,6 +20,7 @@ int main (int argc, char **argv) {
 
     trace = fopen (argv[2], "r");
     saida = fopen (argv[3], "w");
+    debugfile = fopen (argv[5], "w");
     
     if (trace == NULL){
         printf ("Problemas na abertura do arquivo\n");
@@ -45,7 +46,9 @@ int main (int argc, char **argv) {
         default:
             printf ("Escalonador invalido.\n");
     }
-
+    fclose (trace);
+    fclose (saida);
+    fclose (debugfile);
     pthread_exit (NULL);
     return 0;
 }
