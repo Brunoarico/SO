@@ -1,8 +1,15 @@
 CFLAGS = -g -Wall -pthread
 
-default : FCFS.o fila.o MQ.o SRT.o structs.o globals.o simulador.o
-	$(CC) $(CFLAGS) *.o -o sim
+default : simulador terminal
 
+simulador : FCFS.o fila.o MQ.o SRT.o structs.o globals.o simulador.o
+	$(CC) $(CFLAGS) FCFS.o fila.o MQ.o SRT.o simulador.o -o sim
+
+terminal: ep1sh.o
+	$(CC) $(CFLAGS) ep1sh.o -o ep1 -lreadline
+
+ep1sh.o : ep1sh.c
+	$(CC) $(CFLAGS) -c $^
 FCFS.o : FCFS.c FCFS.h
 	$(CC) $(CFLAGS) -c $^
 fila.o : fila.c fila.h
@@ -18,12 +25,8 @@ globals.o : globals.h
 simulador.o : simulador.c
 	$(CC) $(CFLAGS) -c $^
 
-ep1 : ep1sh.o
-	cc -o ep1 ep1sh.o -lreadline
-
-ep1sh.o : ep1sh.c
-	$(CC) $(CFLAGS) -c $^
 clear:
+	$(RM) ep1
 	$(RM) sim
 	$(RM) *.o
 	find . -name "*.gch" -exec $(RM) -rf {} \;

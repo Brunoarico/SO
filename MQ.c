@@ -54,7 +54,7 @@ void *ThreadAdd3 (void *arg) {
     /*printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);*/
     if (debug)
         fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
-    free (arg);
+ 
     pthread_mutex_unlock (&mutex);
     return NULL;
 }
@@ -80,7 +80,7 @@ void LiberarVetorQuantuns (float *quantuns) {
 
 void MultiplasFIlas (process *routine, int Nprocs) {
     int i = 0, a, execs = 0, entraram = 0, contextswitch = 0;
-    process *P;
+    process *P, aux;
     time_t start, stop;
     int filaatual = 0;
     int achou = 0;
@@ -116,9 +116,8 @@ void MultiplasFIlas (process *routine, int Nprocs) {
             if (!is_Empty(Qs[filaatual])) { /* assumindo que NUMBER_OF_QUEUES > 0 */
                 achou = 1;
                 /* faz unqueue e executa aquele quantum */
-                P = malloc (sizeof (process));
-                *P = Unqueue (Qs[filaatual]);
-                //strcpy (name, P->name);
+                aux = Unqueue (Qs[filaatual]);
+		P = &aux;
                 P->quantum = quantuns[filaatual];
                 printf ("%f s > comeca a rodar %s %d por %f e tem ate %f para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->t_begin + P->deadline);
                 pthread_create (&P->tID, NULL, ThreadAdd3, P);
