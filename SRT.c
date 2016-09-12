@@ -3,6 +3,7 @@
 static float Delta;
 static float Remaining_time = 0;
 static tempo start={0,0};
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *ThreadAdd2 (void *arg) {
     int i = 1;
@@ -10,7 +11,7 @@ void *ThreadAdd2 (void *arg) {
     float begin, Tstart;
     P = *(process*) arg;
     point = (process*) arg;
-    
+    pthread_mutex_lock(&mutex);
     Tstart = begin = Delta;
 
     //we can set one or more bits here, each one representing a single CPU
@@ -35,7 +36,7 @@ void *ThreadAdd2 (void *arg) {
 
     
     //printf("endereco da thread %s: %d\n", P.name, point);
-    while (P.remaining > 0) {
+    while (P.remaining >= 0) {
 	//printf("Remaining_time %f\n", Remaining_time);
         if (point->flag) {
             if (pausado && debug) {
@@ -44,14 +45,16 @@ void *ThreadAdd2 (void *arg) {
             }
             Remaining_time = P.remaining = P.dt - (Delta - begin);
             i = i - 3 * i;
+	    
+	    //printf("%s rodando\n", P.name);
         }
-
 	else {
             if (debug && !pausado) {
                 pausado = 1;
                 fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
-		
+		//printf("%s parado\n", P.name);
             }
+	    pthread_mutex_unlock(&mutex);
             begin = Delta;
         }
 	//printf("flag %d\n", point->flag);
@@ -62,6 +65,7 @@ void *ThreadAdd2 (void *arg) {
     }
     Remaining_time = 0;
     //printf ("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n", Delta, P.name, P.dt, Delta - Tstart);
+    pthread_mutex_unlock(&mutex);
     free (arg);
     return (void*) 1;
 }
@@ -124,7 +128,7 @@ void SRT (process *routine, int Nprocs) {
                         pause_thread (EXE);                     // pausa ele
                         EXE->remaining = Remaining_time;
                         Q = to_PQueue (*EXE, Q);                // e manda para a fila de volta
-                        Elements(Q);
+                        //Elements(Q);
                     }
                     contextswitch++;
                     printf ("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, Remaining_time); 
