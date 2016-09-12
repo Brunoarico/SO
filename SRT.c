@@ -24,7 +24,7 @@ void *ThreadAdd2 (void *arg) {
     sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
     while (P.remaining >= 0) {
-      	//printf("Remaining_time %f\n", Remaining_time);
+      	printf("Remaining_time %f\n", Remaining_time);
         if (point->flag) {
             if (pausado && debug) {
                 fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
@@ -35,14 +35,14 @@ void *ThreadAdd2 (void *arg) {
 	    pthread_mutex_unlock (&mutex);
             i = i - 3 * i;
 	    
-	    //printf("%s rodando\n", P.name);
+	    printf("%s rodando\n", P.name);
         }
 	else {
             if (debug && !pausado) {
                 pausado = 1;
                 fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
             }
-	    //printf("%s parado\n", P.name);
+	    printf("%s parado\n", P.name);
 	    
             begin = Delta;
         }
@@ -68,9 +68,7 @@ process *initiate_thread (process p) {
     P->self = P;                                                //agora ele existe
     //printf("Criando: %s\n", P->name);
     pthread_create (&P->tID, NULL, ThreadAdd2, P);              //cria a thread
-    pthread_mutex_lock (&mutex);
     Remaining_time = P->remaining;                                     //atualiza o tempo de quem esta em execucão
-    pthread_mutex_lock (&mutex);
     return P;                                                   //retorna um ponteiro para quem esta executando
 }
 
@@ -107,7 +105,7 @@ void SRT (process *routine, int Nprocs) {
     Q = NewQueue ();
     
     while (!is_Empty (Q) || Remaining_time || execs < Nprocs) {
-	pthread_mutex_lock (&mutex);
+        
         clock_gettime(CLOCK_MONOTONIC, &stop);
         Delta = diff(stop, start);                    // mede o tempo
         for (i = execs; i < Nprocs; i++) {
@@ -137,7 +135,9 @@ void SRT (process *routine, int Nprocs) {
             EXE = NULL;
             aux = Unqueue (Q);                                 // tira da fila
             if (is_thread_exist (&aux)) {                      // se a thread ja existir
+		pthread_mutex_lock (&mutex);
 		Remaining_time = aux.remaining;
+		pthread_mutex_unlock (&mutex);
                 printf ("%f s > Volta a executar %s que tem ainda %f s para terminar\n", Delta, aux.name, aux.remaining);
                 EXE = aux.self;                                   // faz dele o que esta rodando
                 continue_thread (EXE);                         // e manda ele continuar
@@ -147,7 +147,7 @@ void SRT (process *routine, int Nprocs) {
             }
             Elements (Q);
         }
-	pthread_mutex_unlock (&mutex);
+	
     }
     if (debug)
         fprintf(stderr, "%d\n", contextswitch);
