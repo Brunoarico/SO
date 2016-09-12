@@ -1,3 +1,11 @@
+/******************************************************************************
+ *  Nome:   Bruno Arico         8125459
+ *          Nicolas Nogueira    9277541
+ *
+ *  Sistemas Operacionais MAC0422
+ *
+ *****************************************************************************/
+
 #include "fila.h"
 
 queue NewQueue () {
@@ -84,25 +92,3 @@ queue to_PQueue (process this, queue Q) {
     }
 }
 
-
-int Elements (queue Q) {
-    queue aux;
-    int i;
-    aux = Q->prox;
-    for (i = 0; aux != Q; i++, aux = aux->prox) {
-        printf ("%s %d -> ", aux->proc.name, aux->proc.id);         
-    }
-    printf ("\n");
-    return i;
-}
-
-int Elements2 (queue Q, process *routine) {
-    queue aux;
-    int i;
-    aux = Q->prox;
-    for (i = 0; aux != Q; i++, aux = aux->prox) {
-        printf ("%s %d -> ", routine[aux->proc.id].name, aux->proc.id);         
-    }
-    printf ("\n");
-    return i;
-}

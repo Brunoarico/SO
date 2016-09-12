@@ -1,3 +1,11 @@
+/******************************************************************************
+ *  Nome:   Bruno Arico         8125459
+ *          Nicolas Nogueira    9277541
+ *
+ *  Sistemas Operacionais MAC0422
+ *
+ *****************************************************************************/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,7 +35,7 @@ int main (int argc, char **argv) {
         exit (1);
     }
     for(i = 0; fscanf (trace, "%f %s %f %f", &routine[i].t_begin, routine[i].name, &routine[i].dt, &routine[i].deadline) != EOF; i++) {
-        //printf ("%f %s %f %f\n", routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline );
+       
         routine[i].flag = 1;
         routine[i].remaining = routine[i].dt;
         routine[i].self = NULL;
