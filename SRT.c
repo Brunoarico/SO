@@ -1,43 +1,28 @@
 #include "SRT.h"
-
+#include <math.h>
 static float Delta;
 static float Remaining_time = 0;
 static tempo start={0,0};
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int dead = 0;
 
 void *ThreadAdd2 (void *arg) {
     int i = 1;
     process P, *point;
     float begin, Tstart;
-    P = *(process*) arg;
-    point = (process*) arg;
-    pthread_mutex_lock(&mutex);
-    Tstart = begin = Delta;
-
-    //we can set one or more bits here, each one representing a single CPU
     cpu_set_t cpuset; 
-
-    //the CPU we whant to use
     int cpu = 0;
     int pausado = 1;
-
+    
+    P = *(process*) arg;
+    point = (process*) arg;
+    Tstart = begin = Delta;
+    
     CPU_ZERO (&cpuset);       //clears the cpuset
     CPU_SET (cpu , &cpuset); //set CPU 0 on cpuset
-
-
-    /*
-    * cpu affinity for the calling thread 
-    * first parameter is the pid, 0 = calling thread
-    * second parameter is the size of your cpuset
-    * third param is the cpuset in which your thread will be
-    * placed. Each bit represents a CPU
-    */
     sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
-    
-    //printf("endereco da thread %s: %d\n", P.name, point);
     while (P.remaining >= 0) {
-	//printf("Remaining_time %f\n", Remaining_time);
+	printf("Remaining_time %f\n", Remaining_time);
         if (point->flag) {
             if (pausado && debug) {
                 fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
@@ -45,29 +30,29 @@ void *ThreadAdd2 (void *arg) {
             }
             Remaining_time = P.remaining = P.dt - (Delta - begin);
             i = i - 3 * i;
-	    
-	    //printf("%s rodando\n", P.name);
+	    printf("%s rodando\n", P.name);
         }
 	else {
             if (debug && !pausado) {
                 pausado = 1;
                 fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
-		//printf("%s parado\n", P.name);
             }
-	    pthread_mutex_unlock(&mutex);
+	    printf("%s parado\n", P.name);
+	    
             begin = Delta;
         }
-	//printf("flag %d\n", point->flag);
+
     }
+    Remaining_time = 0;
     if (debug) {
         fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
         fprintf (stderr, "%f s > Finalizou: %s %f %f\n", Delta, P.name, Delta, Delta - Tstart);
+	if(Delta-Tstart > P.deadline)
+	    dead++;
     }
-    Remaining_time = 0;
     //printf ("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n", Delta, P.name, P.dt, Delta - Tstart);
-    pthread_mutex_unlock(&mutex);
     free (arg);
-    return (void*) 1;
+    return NULL;
 }
 
 process *initiate_thread (process p) {
@@ -115,7 +100,6 @@ void SRT (process *routine, int Nprocs) {
     
     while (!is_Empty (Q) || Remaining_time || execs < Nprocs) {
         clock_gettime(CLOCK_MONOTONIC, &stop);
-	//printf("Tempo = %.5f\n", diff(stop, start));
         Delta = diff(stop, start);                    // mede o tempo
         for (i = execs; i < Nprocs; i++) {
             if (routine[i].t_begin <= Delta) {                 // se algum processo chegar 
@@ -128,13 +112,13 @@ void SRT (process *routine, int Nprocs) {
                         pause_thread (EXE);                     // pausa ele
                         EXE->remaining = Remaining_time;
                         Q = to_PQueue (*EXE, Q);                // e manda para a fila de volta
-                        //Elements(Q);
                     }
+		    
                     contextswitch++;
-                    printf ("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, Remaining_time); 
+                    //printf ("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, Remaining_time); 
                     EXE = initiate_thread (routine[i]);          // inicia o cara que tem urgencia
                 } else {                                           //do contrario so manda para a fila
-                    printf ("%f s > %s chegou e foi para a fila dt = %f\n", Delta, routine[i].name, routine[i].remaining);  
+                    //printf ("%f s > %s chegou e foi para a fila dt = %f\n", Delta, routine[i].name, routine[i].remaining);  
                     Q = to_PQueue (routine[i], Q);
                 }
             }
@@ -156,10 +140,10 @@ void SRT (process *routine, int Nprocs) {
             Elements (Q);
         }
     }
-    pthread_join(EXE->tID, NULL);
     if (debug)
         fprintf(stderr, "%d\n", contextswitch);
     
     fprintf(saida, "%d\n", contextswitch);
     printf ("Fim!\n");
+    fprintf(debugfile, "%d %d\n", contextswitch, dead);
 }
