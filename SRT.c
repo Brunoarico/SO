@@ -68,7 +68,9 @@ process *initiate_thread (process p) {
     P->self = P;                                                //agora ele existe
     //printf("Criando: %s\n", P->name);
     pthread_create (&P->tID, NULL, ThreadAdd2, P);              //cria a thread
+    pthread_mutex_lock (&mutex);
     Remaining_time = P->remaining;                                     //atualiza o tempo de quem esta em execucão
+    pthread_mutex_lock (&mutex);
     return P;                                                   //retorna um ponteiro para quem esta executando
 }
 
