@@ -1,0 +1,22 @@
+Para compilar e gerar os dois binários basta evocar um makefile que compila e gera os binários.
+
+make
+
+Para executar o shell basta digitar o comando:
+
+./ep1sh
+
+Para executar o escalonador dentro do shell basta executar:
+
+./ep1 s arquivo_entrada arquivo_saida d
+
+s - inteiro que sinaliza qual escalonador usar
+	1 - FCFS
+	2 - SRTN
+	3 - Múltiplas Filas
+
+arquivo_entrada - trace de entrada para o sistema
+
+arquivo_saida - arquivo de saída exigido no EP
+
+d - argumento opcional para exibir eventos na saída padrão de erro (stderr)
