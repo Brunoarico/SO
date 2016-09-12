@@ -1,45 +1,35 @@
+/******************************************************************************
+ *  Nome:   Bruno Arico         8125459
+ *          Nicolas Nogueira    9277541
+ *
+ *  Sistemas Operacionais MAC0422
+ *
+ *****************************************************************************/
+
 #include "MQ.h"
 
 pthread_mutex_t mutex;
 float remaining_time = 0;
 float Delta;
+int dead
 
 void *ThreadAdd3 (void *arg) {
     int i = 0;
     tempo Tstart, Tstop;
     double tDelta;
-
     process P, *point;   
+    cpu_set_t cpuset; 
+    int cpu = 0;
     P = *(process*) arg;
     point = (process*) arg;
+    CPU_ZERO (&cpuset);      
+    CPU_SET (cpu , &cpuset); 
 
-    //we can set one or more bits here, each one representing a single CPU
-    cpu_set_t cpuset; 
-
-    //the CPU we whant to use
-    int cpu = 0;
-
-    CPU_ZERO (&cpuset);       //clears the cpuset
-    CPU_SET (cpu , &cpuset); //set CPU 0 on cpuset
-
-
-    /*
-    * cpu affinity for the calling thread 
-    * first parameter is the pid, 0 = calling thread
-    * second parameter is the size of your cpuset
-    * third param is the cpuset in which your thread will be
-    * placed. Each bit represents a CPU
-    */
     sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
     pthread_mutex_lock (&mutex);
     clock_gettime(CLOCK_MONOTONIC, &Tstart);
 
-    /*if (P.dt == P.remaining)
-        printf ("Comecando ");
-    else
-        printf ("Continuando ");*/
-    /*printf("%s com tempo total %f, faltando %f, executando por %f\n", P.name, P.dt, P.remaining, P.quantum);*/
     if (debug)
         fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
     clock_gettime(CLOCK_MONOTONIC, &Tstop);
@@ -51,7 +41,6 @@ void *ThreadAdd3 (void *arg) {
         i++;
     }
     point->remaining = point->remaining - tDelta;
-    /*printf("Executou %s em %f segundos! Tempo restante: %f\n", P.name, tDelta, point->remaining);*/
     if (debug)
         fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
  
@@ -63,14 +52,11 @@ float *GerarVetorQuantuns (int size) {
     int i;
     float pot = 1;
     float *quantuns = malloc (size * sizeof (float));
-    //printf ("mallocquei o vetor de quantuns de tam %d\n", size);
     for (i = 0; i < size; i++) {
         pot = pot * 2;
         quantuns[i] = pot;
     }
-    /*for (i = 0; i < size; i++)
-        printf("%f ", quantuns[i]);
-    printf("\n");*/
+    
     return quantuns;
 }
 
@@ -88,7 +74,7 @@ void MultiplasFIlas (process *routine, int Nprocs) {
     float *quantuns = GerarVetorQuantuns(NUMBER_OF_QUEUES); /*quantuns sempre em potência de 2*/
     clock_gettime(CLOCK_MONOTONIC, &start);
     Qs = NewMultipleQueues (NUMBER_OF_QUEUES);
-    //printf("%d %d\n", execs, Nprocs);
+ 
     while (execs < Nprocs) { /*não terminei de executar todos*/
         clock_gettime(CLOCK_MONOTONIC, &stop); /*checa tempo*/
         Delta = diff (stop, start);
@@ -97,12 +83,7 @@ void MultiplasFIlas (process *routine, int Nprocs) {
             /*coloca novos processos em f0*/
             if (debug)
                 fprintf (stderr, "%f s > Chegou %s no sistema: %f %s %f %f\n", Delta, routine[i].name, routine[i].t_begin, routine[i].name, routine[i].dt, routine[i].deadline);
-            printf ("%f s > mandando %s %d para a fila inicial\n", Delta, routine[i].name, routine[i].id);
             Qs[0] = to_Queue (routine[i], Qs[0]);
-            for (a = 0; a < NUMBER_OF_QUEUES; a++) {
-                printf ("Fila %d ", a);
-                Elements2(Qs[a], routine);
-            }
             i++;
             entraram++;
         }
@@ -119,13 +100,10 @@ void MultiplasFIlas (process *routine, int Nprocs) {
                 aux = Unqueue (Qs[filaatual]);
 		P = &aux;
                 P->quantum = quantuns[filaatual];
-                printf ("%f s > comeca a rodar %s %d por %f e tem ate %f para executar\n", Delta, routine[P->id].name, P->id, quantuns[filaatual], P->t_begin + P->deadline);
                 pthread_create (&P->tID, NULL, ThreadAdd3, P);
                 pthread_join(P->tID, NULL);
                 clock_gettime(CLOCK_MONOTONIC, &stop);
                 Delta = diff (stop, start);
-                printf("%f s > Tempo restante de %s %d: %f\n", Delta, routine[P->id].name, P->id, P->remaining);
-
                  /*se não terminar passar pra próxima fila */
                 if (P->remaining > 0) {
                     //ocorre troca de contexto
@@ -133,30 +111,15 @@ void MultiplasFIlas (process *routine, int Nprocs) {
                     if (filaatual != (NUMBER_OF_QUEUES - 1)) {
                         filaatual++;
                         P->quantum = quantuns[filaatual];
-                        printf ("%f s > Ja chegou o %s %d! na fila %d\n", Delta, routine[P->id].name, P->id, filaatual);
                         Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     } else {
                             /* ta na última fila (fila circular) */
-                        printf ("%f s > Ja chegou o %s %d! na fila %d\n", Delta, routine[P->id].name, P->id, filaatual);
                         Qs[filaatual] = to_Queue (*P, Qs[filaatual]);
                     }
-                    for (a = 0; a < NUMBER_OF_QUEUES; a++) {
-                        printf ("Fila %d ", a);
-                        Elements2 (Qs[a], routine);
-                    }
                 } else {
-                    if (Delta > (P->t_begin + P->deadline)) {
-                        printf ("Excedeu deadline %s %f %f \n", routine[P->id].name, Delta, (P->t_begin + P->deadline));
-
-                    }
-                    printf("%f s > Acabou %s %d\n", Delta, routine[P->id].name, P->id);
                     if (debug)
                         fprintf (stderr, "%f s > Finalizou: %s %f %f\n", Delta, routine[P->id].name, Delta, Delta - P->t_begin);
                     fprintf (saida, "%s %f %f\n", routine[P->id].name, Delta, Delta - P->t_begin);
-                    for (a = 0; a < NUMBER_OF_QUEUES; a++) {
-                        printf ("Fila %d ", a);
-                        Elements2 (Qs[a], routine);
-                    }
                     execs++;
                 }
             } else {
@@ -167,4 +130,5 @@ void MultiplasFIlas (process *routine, int Nprocs) {
     if (debug)
         fprintf(stderr, "%d\n", contextswitch);
     fprintf(saida, "%d\n", contextswitch);
+    fprintf (
 }

@@ -1,3 +1,11 @@
+/******************************************************************************
+ *  Nome:   Bruno Arico         8125459
+ *          Nicolas Nogueira    9277541
+ *
+ *  Sistemas Operacionais MAC0422
+ *
+ *****************************************************************************/
+
 #include "SRT.h"
 
 static float Delta;
@@ -24,7 +32,6 @@ void *ThreadAdd2 (void *arg) {
     sched_setaffinity (0, sizeof (cpuset), &cpuset);
 
     while (P.remaining >= 0) {
-      	printf("Remaining_time %f\n", Remaining_time);
         if (point->flag) {
             if (pausado && debug) {
                 fprintf (stderr, "%s usando a CPU %d\n", P.name, sched_getcpu());
@@ -35,14 +42,13 @@ void *ThreadAdd2 (void *arg) {
 	    pthread_mutex_unlock (&mutex);
             i = i - 3 * i;
 	    
-	    printf("%s rodando\n", P.name);
+	    
         }
 	else {
             if (debug && !pausado) {
                 pausado = 1;
                 fprintf (stderr, "%s liberou a CPU %d\n", P.name, sched_getcpu());
             }
-	    printf("%s parado\n", P.name);
 	    
             begin = Delta;
         }
@@ -56,7 +62,6 @@ void *ThreadAdd2 (void *arg) {
 	if(Delta-Tstart > P.deadline)
 	    dead++;
     }
-    //printf ("%f s > Finalizado %s em %f segundos, tempo de parede %f. \n", Delta, P.name, P.dt, Delta - Tstart);
     free (arg);
     return NULL;
 }
@@ -75,7 +80,6 @@ process *initiate_thread (process p) {
 void pause_thread (process *p) {
     if (p->self != NULL) {
         p->flag = 0;
-        printf("Pausou thread %s\n", p->name);
     }
     else
         printf ("Pausou thread inexistente\n");
@@ -84,7 +88,6 @@ void pause_thread (process *p) {
 void continue_thread (process *p) {
     if (p->self != NULL){
         p->flag = 1;
-        printf("Continuando thread %s\n", p->name);
     }
     else
         printf ("Continuou thread inexistente\n");
@@ -101,13 +104,14 @@ void SRT (process *routine, int Nprocs) {
     int i, execs = 0, contextswitch = 0;
     process *EXE = NULL, aux;
     tempo stop={0,0};
+    
     clock_gettime(CLOCK_MONOTONIC, &start);
     Q = NewQueue ();
     
     while (!is_Empty (Q) || Remaining_time || execs < Nprocs) {
         
         clock_gettime(CLOCK_MONOTONIC, &stop);
-        Delta = diff(stop, start);                    // mede o tempo
+        Delta = diff(stop, start);                  
         for (i = execs; i < Nprocs; i++) {
             if (routine[i].t_begin <= Delta) {                 // se algum processo chegar 
                 execs++;
@@ -122,10 +126,11 @@ void SRT (process *routine, int Nprocs) {
                     }
 		    
                     contextswitch++;
-                    //printf ("%f s > %s chegou dt = %f substituindo %s que tem %f para executar\n", Delta, routine[i].name, routine[i].remaining, EXE->name, Remaining_time); 
+                    
                     EXE = initiate_thread (routine[i]);          // inicia o cara que tem urgencia
-                } else {                                           //do contrario so manda para a fila
-                    //printf ("%f s > %s chegou e foi para a fila dt = %f\n", Delta, routine[i].name, routine[i].remaining);  
+                }
+		else {                                           // do contrario so manda para a fila
+                    
                     Q = to_PQueue (routine[i], Q);
                 }
             }
@@ -138,11 +143,10 @@ void SRT (process *routine, int Nprocs) {
 		pthread_mutex_lock (&mutex);
 		Remaining_time = aux.remaining;
 		pthread_mutex_unlock (&mutex);
-                printf ("%f s > Volta a executar %s que tem ainda %f s para terminar\n", Delta, aux.name, aux.remaining);
                 EXE = aux.self;                                   // faz dele o que esta rodando
                 continue_thread (EXE);                         // e manda ele continuar
-            } else {
-                printf ("%f s > Comeca a executar %s\n", Delta, aux.name);
+            }
+	    else {
                 EXE = initiate_thread (aux);
             }
             Elements (Q);
@@ -153,6 +157,5 @@ void SRT (process *routine, int Nprocs) {
         fprintf(stderr, "%d\n", contextswitch);
     
     fprintf(saida, "%d\n", contextswitch);
-    printf ("Fim!\n");
     fprintf(debugfile, "%d %d\n", contextswitch, dead);
 }
