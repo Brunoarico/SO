@@ -36,6 +36,7 @@ pthread_t *ciclistas;
 int tam_pista;
 int n;
 char option;
+tempo comeca;
 
 /*calcula diferenças de tempo*/
 float diff (tempo end, tempo init) {
@@ -109,12 +110,14 @@ void evento (char option, equipe E, int indice, int m_percorridos){
     }
 }
 
+
 /*codigo da thread*/
 void *ciclista (void *arg) {
     int posicao, volta = 0, indice, m_percorridos = 0;
     equipe eqp;
     int i;
     pthread_t I;
+    tempo cheguei;
     eqp = *(equipe*) arg;
     
     I = pthread_self();              //pega seu proprio tID
@@ -134,15 +137,14 @@ void *ciclista (void *arg) {
 	    if (i != posicao)
 		printf("-");
 	    else
-		printf(" %d ", I%10);
+		printf(" %d ", I%100);
 	}
 	printf("\n");
 	sai(I, posicao); // marca que saiu
-	wait(0.6 * 60/eqp.integrantes[indice].velocidade);       //faz o delay
+	wait(0.6 * 60/eqp.integrantes[indice].velocidade * 0.001);       //faz o delay
 	sem_post(&pista[posicao].mutex);
 	
 	atualiza_meu_status(eqp, indice, volta, m_percorridos); // atualiza no vetor integrantes
-	
 	if (m_percorridos && !(m_percorridos % tam_pista)) {               // ve se completou uma volta
 	    volta++;
 	    evento(option, eqp, indice, m_percorridos);                      // dispara eventos
@@ -151,6 +153,8 @@ void *ciclista (void *arg) {
 	m_percorridos++;
         posicao = (posicao+1)%tam_pista;
     }
+    clock_gettime(CLOCK_MONOTONIC, &cheguei);
+    printf("Thread %d chegou no fim da corrida em %f\n s", I, diff(comeca, cheguei));
     return NULL;
 }
 
@@ -195,7 +199,7 @@ void finaliza_corredores () { //verificar corredores ja mortos
     free(Team_American);
 }
 
-void destroiPista () {
+void destroi_pista () {
     int i;
     for (i = 0; i < tam_pista; i++)
 	sem_destroy(&pista[i].mutex);
@@ -209,11 +213,15 @@ int main (int argc, char **argv) {
     option = argv[3][0];
     printf("Tamanho da pista %d numero de corredores %d\n", tam_pista, n);
     inicia_pista ();
-
+    
+    clock_gettime(CLOCK_MONOTONIC, &comeca);
     inicia_corredores ();
     for (i = 0; i< n; i++)
 	pthread_join(ciclistas[i], NULL);
-    printf("Ok");
+    
+    printf("Ok\n");
+    finaliza_corredores();
+    destroi_pista();
     return 0;
     
 }
