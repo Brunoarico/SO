@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>  
-#include <semaphore.h> 
+#include <semaphore.h>
+#define Tsimulado 0.1
 
 typedef struct timespec tempo;
 
@@ -83,6 +84,20 @@ int meu_indice(equipe E, pthread_t I) {
     exit (1);	    
 }
 
+/* Ordena o vetor de integrantes de a cordo com a distancia, 
+que estara em primeiro fica no fim do vetor (Ordem crescente)*/
+void ordena_integrantes (int n, competidor *v) {
+  int i, j;
+  competidor x;
+
+  for (j = 1; j < n; ++j) {
+    x = v[j];
+    for (i = j-1; i >= 0 && v[i].distancia > x.distancia; --i) 
+      v[i+1] = v[i];
+    v[i+1] = x;
+  }
+}
+
 /*atualiza o status da thread no vetor integrantes*/
 void atualiza_meu_status (equipe E, int indice, int volta, int m_percorridos) {
     E.integrantes[indice].voltas = volta;
@@ -101,13 +116,26 @@ int quebra (equipe E, int indice, int m_percorridos) {
 
 /*faz os eventos aleatorios os eventos*/
 void evento (char option, equipe E, int indice, int m_percorridos){
-    if (quebra (E, indice, m_percorridos)) {
-	printf("quebrou ciclista %d, na volta %d\n", E.integrantes[indice].id % 100, m_percorridos/tam_pista);
+  int i;
+  int flag = 0;
+  if (quebra (E, indice, m_percorridos)) {
+    printf("quebrou ciclista %d, na volta %d\n", E.integrantes[indice].id % 100, m_percorridos/tam_pista);
+  }
+  
+  if(option == 'v') {
+    if (rand() % 2){
+      for (i = indice+1; i < E.n_de_integrantes; i++) 
+	if (30 == E.integrantes[i].velocidade) // Verifica se tem alguem com velocidade 30 na frente
+	  flag++;
+
+      if(flag) E.integrantes[indice].velocidade = 30; // Se tiver fica com 30
+      else E.integrantes[indice].velocidade = 60;
+      /* Colocar a condição de caso fique duas voltas sem o cara da frente acelerar*/
     }
-    if(option == 'v') {
-	if (rand() % 2) E.integrantes[indice].velocidade = 60;
-	else E.integrantes[indice].velocidade = 30;
-    }
+    
+    else
+	E.integrantes[indice].velocidade = 30;
+  }
 }
 
 
@@ -133,28 +161,39 @@ void *ciclista (void *arg) {
         sem_wait(&pista[posicao].mutex);
 	chega (I, posicao);                     //marca que chegou
 	//printf ("Thread %d nome %d posicao %d meu indice %d, volta %d\n", eqp.n_da_equipe, I%100, posicao, indice, volta);
-	for (i = 0; i < tam_pista; i++) { // printa a pista
-	    if (i != posicao)
-		printf("-");
-	    else
-		printf(" %d ", I%100);
-	}
-	printf("\n");
+
+	  
 	sai(I, posicao); // marca que saiu
-	wait(0.6 * 60/eqp.integrantes[indice].velocidade * 0.001);       //faz o delay
-	sem_post(&pista[posicao].mutex);
+	wait(0.6 * 60/eqp.integrantes[indice].velocidade *Tsimulado);       //faz o delay
+	
 	
 	atualiza_meu_status(eqp, indice, volta, m_percorridos); // atualiza no vetor integrantes
+
+	ordena_integrantes(eqp.n_de_integrantes, eqp.integrantes);
+	
 	if (m_percorridos && !(m_percorridos % tam_pista)) {               // ve se completou uma volta
 	    volta++;
-	    evento(option, eqp, indice, m_percorridos);                      // dispara eventos
+	    evento (option, eqp, indice, m_percorridos);                      // dispara eventos
 	}
 	
+	for (i = 0; i < tam_pista; i++) { // printa a pista
+	  if (i != posicao)
+	    printf("-");
+	  else
+	    printf(" %d ", I%100);
+	}
+	printf("\n");
+	
+	sem_post(&pista[posicao].mutex);
+	
+	
 	m_percorridos++;
-        posicao = (posicao+1)%tam_pista;
+        posicao = (posicao+1) % tam_pista; // avança 1 no vetor circular da pista
+	
     }
-    clock_gettime(CLOCK_MONOTONIC, &cheguei);
-    printf("Thread %d chegou no fim da corrida em %f\n s", I, diff(comeca, cheguei));
+    
+    clock_gettime (CLOCK_MONOTONIC, &cheguei);
+    printf ("Thread %d chegou no fim da corrida em %f\n s", I, diff(cheguei, comeca));
     return NULL;
 }
 
