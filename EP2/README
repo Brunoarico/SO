@@ -1,0 +1,18 @@
+/******************************************************************************
+ *  Nome:   Bruno Rafael Arico         			8125459
+ *          Nicolas Nogueira Lopes da Silva   	9277541
+ *
+ *****************************************************************************/
+
+Para compilar e gerar os dois binários basta evocar um makefile que compila e gera os binários.
+
+make
+
+Para executar o programa basta digitar o comando:
+
+./ep2 d n [v|u]
+
+d - tamanho da pista
+n - competidores por equipe
+v - modo com velocidades aleatórias
+u - modo com velocidades uniformes

@@ -172,7 +172,6 @@ void *temporizador (void *arg) {
 void *ciclista (void *arg) {
     int posicao, volta = 0, indice, m_percorridos = 0;
     equipe eqp;
-    int i;
     pthread_t I;
     tempo cheguei, termineivolta;
     eqp = *(equipe*) arg;
@@ -216,7 +215,7 @@ void *ciclista (void *arg) {
 
         pthread_mutex_lock(&lock);
         if (flaglock) {      
-            if (vencedor = verifica_ultrapassagem() != -1) {
+            if ((vencedor = verifica_ultrapassagem()) != -1) {
                 printf("Vencedor! %d\n", vencedor);
                 break;
             }
@@ -230,7 +229,7 @@ void *ciclista (void *arg) {
     flaglock = 1;
     
     clock_gettime (CLOCK_MONOTONIC, &cheguei);
-    printf ("Thread %d chegou no fim da corrida em %f\n s", I, diff(cheguei, comeca));
+    printf ("Thread %d chegou no fim da corrida em %f\n s", (int) I, diff(cheguei, comeca));
     return NULL;
 }
 

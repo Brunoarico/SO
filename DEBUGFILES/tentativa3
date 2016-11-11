@@ -1,0 +1,15 @@
+#!/bin/bash
+../sim 3 arquivoTrace2.txt output.txt d debugfile2.txt
+../sim 3 arquivoTrace3.txt output.txt d debugfile3.txt
+../sim 3 arquivoTrace4.txt output.txt d debugfile4.txt
+../sim 3 arquivoTrace5.txt output.txt d debugfile5.txt
+../sim 3 arquivoTrace6.txt output.txt d debugfile6.txt
+../sim 3 arquivoTrace7.txt output.txt d debugfile7.txt
+../sim 3 arquivoTrace8.txt output.txt d debugfile8.txt
+../sim 3 arquivoTrace9.txt output.txt d debugfile9.txt
+../sim 3 arquivoTrace10.txt output.txt d debugfile10.txt
+../sim 3 arquivoTrace11.txt output.txt d debugfile11.txt
+../sim 3 arquivoTrace12.txt output.txt d debugfile12.txt
+../sim 3 arquivoTrace13.txt output.txt d debugfile13.txt
+../sim 3 arquivoTrace14.txt output.txt d debugfile14.txt
+../sim 3 arquivoTrace15.txt output.txt d debugfile15.txt
