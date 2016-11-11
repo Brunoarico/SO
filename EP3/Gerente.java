@@ -3,6 +3,7 @@
  *          Nicolas Nogueira Lopes da Silva     9277541
  *
  *****************************************************************************/
+import java.util.*;
 
 public class Gerente {
 
@@ -42,6 +43,7 @@ public class Gerente {
     }
 
     public void carregarArquivo (String arquivo) {
+        System.out.println("Carregando arquivo: " + arquivo + "\n");
         String str;
         int pidt = 1;
         In in = new In(arquivo);
@@ -63,21 +65,24 @@ public class Gerente {
     public static void main(String[] args) {
         Gerente gerente = new Gerente();
         while (true) {
-            System.out.println("(ep3): ");
+            System.out.print("(ep3): ");
             String comando = StdIn.readString();
             if (comando.equals("carrega")) {
                 gerente.carregarArquivo (StdIn.readString());
             } else if (comando.equals("espaco")) {
                 gerente.algespaco = StdIn.readInt();
+                System.out.println(gerente.algespaco);
             } else if (comando.equals("substitui")) {
                 gerente.algsubstitui = StdIn.readInt();
+                System.out.println(gerente.algsubstitui);
             } else if (comando.equals("executa")) {
                 gerente.dt = StdIn.readDouble();
+                System.out.println(gerente.dt);
             } else if (comando.equals("sai")) {
-                System.out.println("");
+                System.out.println("saiu!");
                 break;
             } else {
-                System.out.println("Comando desconhecido\n")
+                System.out.println("Comando desconhecido\n");
             }
         }
     }
