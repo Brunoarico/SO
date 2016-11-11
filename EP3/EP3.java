@@ -1,24 +1,8 @@
 /******************************************************************************
- *  Nome: Nicolas Nogueira Lopes da Silva
- *  Nº USP: 9277541
+ *  Nome:   Bruno Rafael Arico                  8125459
+ *          Nicolas Nogueira Lopes da Silva     9277541
  *
- *  Compilacao: javac-algs4 PercPlot.java
- *  Execucao: java-algs4 PercPlot N M
- *
- *  N - numero de linhas da matriz NxNxN
- *
- *  M - numero de vezes a gerar uma matriz NxNxN para estimar a probabilidade
- *  de percolacao
- *
- *  Desenha o grafico da probabilidade de percolacao baseada na observacao
- *  experimental contra a probabilidade de cada casa da matriz NxNxN estar
- *  aberta.
- *
- *  % java-algs4 PercPlot 30 10000
- *
- *  Obs.: Arquivo retirado do Sandbox disponibilizado pelo professor.
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 public class EP3 {
 
