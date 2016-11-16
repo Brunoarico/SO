@@ -4,6 +4,7 @@
  *
  *****************************************************************************/
 import java.util.*;
+import java.lang.*;
 
 public class Gerente {
 
@@ -17,6 +18,8 @@ public class Gerente {
     Queue<Processo> fila;
     BitSet Mtotal;
     BitSet Mvirtual;
+    static int[] bind = new int[virtual];
+    
 
     public class Processo {
         double t0;
@@ -55,6 +58,7 @@ public class Gerente {
         virtual = Integer.parseInt(sargs[1]);
 	
 	Mtotal = new BitSet (total);
+	
 	Mvirtual = new BitSet (virtual);
 
 	s = Integer.parseInt(sargs[2]);
@@ -70,35 +74,126 @@ public class Gerente {
         }
     }
 
-    public void firstFit (Processo Proc) {
-	int size = Proc.b;
-	int count = 0, beg = 0;
-	boolean flag = false;
-	for (int i = 0; i < total; i++){
-	    //se o bit for zero
-	    
-	    if (!Mtotal.get(i) && count < size) {
-		//marca o comeco
-		if (!flag) {beg = i; flag = true;}
-		count++; //conta a sequencia de zeros
-	    }
-	    else {
-		flag = false;
-		//quando a sequencia acaba
-		if (count == size) {
-		    //se for maior que size, aloca
-		    for (int j = 0; j < size; j++){
-			Mtotal.set(beg+j);
-		    }
-		    break; // encerra a busca
+    public int firstFit (Processo Proc) {
+        int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int count = 1, beg = 0;
+	
+	for (int i = 0; i < virtual; i++) {
+	    if (!Mvirtual.get(i)) {
+		beg = i;
+		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
+		if(count > size) {
+		    Mvirtual.set(beg, beg+size);
+		    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+		    return beg;
 		}
 		else count = 0;
 	    }
 	}
-	
-	System.out.println(Mtotal.toString());
+	System.out.println("Não foi possivel alocar a memoria");
+	System.exit(-1);
+	return beg;
     }
+
+    static int here = 0;
     
+    public int nextFit (Processo Proc) {
+        int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int count = 1, beg = 0, i, ii;
+	boolean flag = false;
+	for (i = here; i < here + virtual ; i++){
+	    ii = (i % virtual); //para fazer nosso apontador ver toda a memoria
+	    if (ii == 0) count = 1; //a memoria não é circular
+	    if (!Mvirtual.get(ii) && count < size) { //se o bit for zero
+		if (!flag) {beg = ii; flag = true;} //marca o comeco
+		count++; //conta a sequencia de zeros
+	    }
+	    else { //quando a sequencia acaba
+		flag = false;
+		if (count >= size) { //se for maior que size, aloca
+		    Mvirtual.set(beg, beg+size);
+		    here = beg+size; //marca onde parou de olhar
+		    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+		    return beg; // encerra a busca
+		}
+		else count = 0; //senão zera o contador e continua buscando
+	    }
+	}
+        System.out.println("Não foi possivel alocar a memoria");
+	System.exit(-1);
+	return beg;
+    }
+
+    public int bestFit (Processo Proc) {
+	int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int provbeg = 0, realbeg = -1, count = 0, diff = Integer.MAX_VALUE;
+
+	for (int i = 0; i < virtual; i++) {
+	    if (!Mvirtual.get(i)) {
+		provbeg = i;
+		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
+
+		if (count > size && count-size < diff) {
+		    realbeg = provbeg;
+		    diff = count-size;
+		}
+		else count = 0;
+	    }
+	}
+
+	if (realbeg < 0) {
+	    System.out.println("Não foi possivel alocar a memoria");
+	    System.exit(-1);
+	}
+	else {
+	    Mvirtual.set(realbeg, realbeg+size);
+	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+	    return realbeg;
+	}
+	return realbeg;
+    }
+
+    public int worstFit (Processo Proc) {
+	int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int provbeg = 0, realbeg = -1, count = 0, diff = -1;
+
+	for (int i = 0; i < virtual; i++) {
+	    if (!Mvirtual.get(i)) {
+		provbeg = i;
+		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
+
+		if (count > size && count-size > diff) {
+		    realbeg = provbeg;
+		    diff = count-size;
+		}
+		else count = 0;
+	    }
+	}
+
+	if (realbeg < 0) {
+	    System.out.println("Não foi possivel alocar a memoria");
+	    System.exit(-1);
+	}
+	else {
+	    Mvirtual.set(realbeg, realbeg+size);
+	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+	    return realbeg;
+	}
+	return realbeg;
+    }
+
+    public void binding (int VirtPage, int RealPage) {
+        try:
+	    bind[VirtPage] = RealPage;
+	catch:
+	    System.out.println("Binding errado");
+    }
+
+    public getFromVirtual (int adr) {
+
+    
+
+
     // test client
     public static void main(String[] args) {
         Gerente gerente = new Gerente();
@@ -107,9 +202,10 @@ public class Gerente {
             String comando = StdIn.readString();
             if (comando.equals("carrega")) {
                 gerente.carregarArquivo (StdIn.readString());
-		gerente.firstFit(gerente.fila.remove());
+		System.out.println("Sonic");
+		System.out.println("A posição é:" + gerente.worstFit(gerente.fila.remove()));
 		System.out.println("tails");
-		gerente.firstFit(gerente.fila.remove());
+		System.out.println("A posição é:" + gerente.worstFit(gerente.fila.remove()));
             } else if (comando.equals("espaco")) {
                 gerente.algespaco = StdIn.readInt();
                 System.out.println(gerente.algespaco);
