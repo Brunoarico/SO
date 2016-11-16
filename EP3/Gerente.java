@@ -8,8 +8,8 @@ import java.lang.*;
 
 public class Gerente {
 
-    int total;
-    int virtual;
+    static int total;
+    static int virtual;
     int s;
     int p;
     int algespaco;
@@ -18,9 +18,10 @@ public class Gerente {
     Queue<Processo> fila;
     BitSet Mtotal;
     BitSet Mvirtual;
-    static int[] bind = new int[virtual];
-    
-
+    int realpages;
+    int virtualpages;
+    static int[] bind;
+	
     public class Processo {
         double t0;
         double tf;
@@ -58,11 +59,16 @@ public class Gerente {
         virtual = Integer.parseInt(sargs[1]);
 	
 	Mtotal = new BitSet (total);
-	
 	Mvirtual = new BitSet (virtual);
-
+	    
 	s = Integer.parseInt(sargs[2]);
 	p = Integer.parseInt(sargs[3]);
+
+        virtualpages =(int) (((double)virtual/(double)s)/(double)p);
+	realpages = (int)(((double)total/(double)s)/(double)p);
+
+	System.out.println(virtualpages + " " + realpages);
+	bind = new int[virtualpages];
 
         fila = new LinkedList<Processo>();
 
@@ -75,9 +81,10 @@ public class Gerente {
     }
 
     public int firstFit (Processo Proc) {
-        int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int bits = Proc.b;
+	int size = 0;
 	int count = 1, beg = 0;
-	
+	while (size <= bits) size += s;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		beg = i;
@@ -98,9 +105,11 @@ public class Gerente {
     static int here = 0;
     
     public int nextFit (Processo Proc) {
-        int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int bits = Proc.b;
+	int size = 0;
 	int count = 1, beg = 0, i, ii;
 	boolean flag = false;
+	while (size <= bits) size += s;
 	for (i = here; i < here + virtual ; i++){
 	    ii = (i % virtual); //para fazer nosso apontador ver toda a memoria
 	    if (ii == 0) count = 1; //a memoria não é circular
@@ -125,9 +134,10 @@ public class Gerente {
     }
 
     public int bestFit (Processo Proc) {
-	int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int bits = Proc.b;
+	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = Integer.MAX_VALUE;
-
+	while (size <= bits) size += s;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
@@ -154,9 +164,10 @@ public class Gerente {
     }
 
     public int worstFit (Processo Proc) {
-	int size = (int)Math.ceil((double)Proc.b/(double)s); //numero de blocos que ira ocupar
+	int bits = Proc.b;
+	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = -1;
-
+	while (size <= bits) size += s;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
@@ -182,18 +193,16 @@ public class Gerente {
 	return realbeg;
     }
 
-    public void binding (int VirtPage, int RealPage) {
-        try:
-	    bind[VirtPage] = RealPage;
-	catch:
-	    System.out.println("Binding errado");
+    public void binding (int Virtual, int Real) {
+	bind[Virtual] = Real;
     }
 
-    public getFromVirtual (int adr) {
-
-    
-
-
+    public void MMU (int Virt) {
+        
+    }
+	
+	
+	
     // test client
     public static void main(String[] args) {
         Gerente gerente = new Gerente();
