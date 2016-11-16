@@ -8,19 +8,20 @@ import java.lang.*;
 
 public class Gerente {
 
-    static int total;
-    static int virtual;
-    int s;
-    int p;
-    int algespaco;
+    static int total; //memoria real
+    static int virtual; //memoria virtual
+    int s; //tamanho da unidade de alocação
+    int p; //tamanho da pagina
+    int algespaco; 
     int algsubstitui;
     double dt;
     Queue<Processo> fila;
-    BitSet Mtotal;
-    BitSet Mvirtual;
-    int realpages;
-    int virtualpages;
+    BitSet Mtotal; //bitmap da memoria real
+    BitSet Mvirtual; //bitmap da memoria virtual
+    int realpages; //numero de paginas que cabem na Real
+    int virtualpages; //numero de paginas que cabem na Virtual
     static int[] bind;
+
 	
     public class Processo {
         double t0;
@@ -197,8 +198,14 @@ public class Gerente {
 	bind[Virtual] = Real;
     }
 
-    public void MMU (int Virt) {
-        
+    public int MMU (int Virt) {
+	int Vblock,Rblock, sector,fin;
+	Vblock = (int)(Virt/p); //encontro sobre qual pagina age a instrução
+	Rblock = bind[Vblock]; //acho a equivalente na memoria Real
+	sector = Virt % s; //acho o setor da pagina
+	fin = Rblock*s + sector; //Faz a translação do bloco
+	System.out.println(Rblock + " " + sector + " " + fin);
+        return fin;
     }
 	
 	
@@ -215,6 +222,8 @@ public class Gerente {
 		System.out.println("A posição é:" + gerente.worstFit(gerente.fila.remove()));
 		System.out.println("tails");
 		System.out.println("A posição é:" + gerente.worstFit(gerente.fila.remove()));
+		gerente.binding(2, 5);
+		gerente.MMU(20);
             } else if (comando.equals("espaco")) {
                 gerente.algespaco = StdIn.readInt();
                 System.out.println(gerente.algespaco);
