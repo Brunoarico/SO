@@ -20,7 +20,8 @@ public class Gerente {
     BitSet Mvirtual; //bitmap da memoria virtual
     int realpages; //numero de paginas que cabem na Real
     int virtualpages; //numero de paginas que cabem na Virtual
-    static int[] bind;
+    static TreeMap<Integer, Integer> bindv;
+    static TreeMap<Integer, Integer> bindr;
 
     
     public class Processo {
@@ -69,7 +70,8 @@ public class Gerente {
         realpages = (int)(((double)total/(double)s)/(double)p);
 
         System.out.println(virtualpages + " " + realpages);
-        bind = new int[virtualpages];
+        bindv = new TreeMap<Integer, Integer>();
+        bindr = new TreeMap<Integer, Integer>();
 
         fila = new LinkedList<Processo>();
 
@@ -195,13 +197,14 @@ public class Gerente {
     }
 
     public void binding (int Virtual, int Real) {
-        bind[Virtual] = Real;
+        bindv.put(Virtual, Real);
+        bindr.put(Real, Virtual);
     }
 
     public int MMU (int Virt) {
         int Vblock,Rblock, sector,fin;
         Vblock = (int)(Virt/p); //encontro sobre qual pagina age a instrução
-        Rblock = bind[Vblock]; //acho a equivalente na memoria Real
+        Rblock = bindv.get(Vblock); //acho a equivalente na memoria Real
         sector = Virt % s; //acho o setor da pagina
         fin = Rblock*s + sector; //Faz a translação do bloco
         System.out.println(Rblock + " " + sector + " " + fin);
@@ -247,13 +250,19 @@ public class Gerente {
     }
     
     public int optimal (int pos, int pid) {
-        if (bind[pos] > 0) {
+        if (bindv.get(pos) > 0) {
             System.out.println("Optimal: posicao esta na mem fisica!");
         } else {
             System.out.println("Optimal: realizando operacao de substituicao.");
-            bind[pos] = pid;
-            //executa operação do optimal
-            //substituir o conteúdo no arquivo
+            if (!counters.isEmpty()) {
+                Pair temp = counters.remove(0);
+                int t = bindr.get(temp.index);
+                bindv.put(pos, temp.index);
+                bindr.put(t, -1);
+                //executa operação do optimal
+                //substituir o conteúdo no arquivo                
+            }
+
         }
         return 1;
     }
