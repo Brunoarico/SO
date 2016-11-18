@@ -20,9 +20,8 @@ public class Gerente {
     BitSet Mvirtual; //bitmap da memoria virtual
     int realpages; //numero de paginas que cabem na Real
     int virtualpages; //numero de paginas que cabem na Virtual
-    static TreeMap<Integer, Integer> bindv;
-    static TreeMap<Integer, Integer> bindr;
-
+    static TreeMap<Integer, Integer> bindv; //par entre página virtual e real com chave sendo página virtual
+    static TreeMap<Integer, Integer> bindr; //par entre página virtual e real com chave sendo página real
     
     public class Processo {
         double t0;
@@ -197,8 +196,9 @@ public class Gerente {
     }
 
     public void binding (int Virtual, int Real) {
-        bindv.put(Virtual, Real);
-        bindr.put(Real, Virtual);
+        bindv.remove(bindr.get(Real)); // REMOVE V -> R
+        bindv.put(Virtual, Real); // ADICIONA NV -> R
+        bindr.put(Real, Virtual); // MODIFICA R -> V para R -> NV
     }
 
     public int MMU (int Virt) {
@@ -256,15 +256,18 @@ public class Gerente {
             System.out.println("Optimal: realizando operacao de substituicao.");
             if (!counters.isEmpty()) {
                 Pair temp = counters.remove(0);
-                int t = bindr.get(temp.index);
-                bindv.put(pos, temp.index);
-                bindr.put(t, -1);
+                binding(pos, temp.index);
                 //executa operação do optimal
                 //substituir o conteúdo no arquivo                
             }
 
         }
         return 1;
+    }
+
+    public void printVirtual () {
+        Out virtout = new Out("/tmp/ep3.vir");
+        for (Pair par : )
     }
 
     // test client
