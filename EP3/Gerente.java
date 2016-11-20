@@ -24,6 +24,7 @@ public class Gerente {
     TreeMap<Integer, Integer> bindr;
     TreeMap<Integer, Integer> bindv;
     boolean pagebit[];
+    ArrayList<Cell> eventos;
 	
     public class Processo {
         double t0;
@@ -89,7 +90,7 @@ public class Gerente {
 	
         while (!in.isEmpty()) {
             str = in.readLine();
-	    System.out.println(str +" aqui");
+	    System.out.println(str);
             sargs = str.split(" ");
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
@@ -99,7 +100,7 @@ public class Gerente {
     public void firstFit (Processo Proc) {
 	int bits = Proc.b;
 	int size = 0;
-	int count = 1, beg = 0;
+	int count = 0, beg = 0;
 	while (size <= bits) size += s;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
@@ -107,13 +108,14 @@ public class Gerente {
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
 		if(count > size) {
 		    Mvirtual.set(beg, beg+size);
-		    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+		    //System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg);
+		    return;
 		}
 		else count = 0;
 	    }
 	}
-	System.out.println("Não foi possivel alocar a memoria");
+	System.out.println("Não foi possivel alocar a memoria de tam " + size);
 	System.exit(-1);
         return;
     }
@@ -138,13 +140,14 @@ public class Gerente {
 		if (count >= size) { //se for maior que size, aloca
 		    Mvirtual.set(beg, beg+size);
 		    here = beg+size; //marca onde parou de olhar
-		    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
+		    System.out.println(Mvirtual.toString());
 		     Proc.setOffset(beg); // encerra a busca
+		     return;
 		}
 		else count = 0; //senão zera o contador e continua buscando
 	    }
 	}
-        System.out.println("Não foi possivel alocar a memoria");
+        System.out.println("Não foi possivel alocar a memoria para " + size);
 	System.exit(-1);
 	return;
     }
@@ -211,7 +214,7 @@ public class Gerente {
 
     //mapeia uma pagina da Virtual na memoria Real
     public void binding (int Virtual, int Real) {
-        bindv.remove(bindr.get(Real)); // REMOVE V -> R
+	if(bindr.containsKey(Real)) bindv.remove(bindr.get(Real)); // REMOVE V -> R
         bindv.put(Virtual, Real); // ADICIONA NV -> R
         bindr.put(Real, Virtual); // MODIFICA R -> V para R -> NV
 
@@ -237,16 +240,20 @@ public class Gerente {
     }
 
     //recebe uma posição na memoria virtual pos*/
-    public void optimal (int pos, int pid) {
-        int accblk = pos/s/p, index = 0;
+    public void optimal (int pos) {
+        int accblk = (int) pos/s/p, index = 0;
 	double buffer, larger = 0;
+	System.out.println("unidade " + s + " paginas " + p);
+	System.out.println("pos " + pos + " accblk " + accblk);
 	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
 	    //se não tiver
-	    
+	    System.out.println(accblk);
 	    if(bindr.size() < realpages){ //ve se tem espaço livre na memoria real
 	        for(int i = 0; i < realpages; i++) //se tiver procura
-		    if(!bindr.containsKey(i)){ 
+		    if(!bindr.containsKey(i)){
+			System.out.println("entrou aqui");
 			Mtotal.set(i*s, (i+1)*s); //preenche esse bloco do bitset
+			System.out.println(Mtotal.toString());
 			binding(accblk, i);
 			return;
 		    }
@@ -256,23 +263,26 @@ public class Gerente {
 		for(int i : bindr.values()) { //percorre todos que estão na real
 		    if(countoptimal[i].isEmpty()) { //se a pilha de alguem estiver vazia
 			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
-			
+			System.out.println(Mtotal.toString());
+			System.out.println("Pilha do Bloco " + i +" vazia");
 			return;
 		    }
 		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
 			buffer = countoptimal[i].peek(); //olha o topo da fila
 			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troca
+			System.out.println("Olhando a pilha");
 		    }   
 		}
 		binding (accblk, bindv.get(index));
 		return;
 	    }	    
 	}
+	else System.out.println("Ela existe");
     }
     static Queue<Integer> SC = new LinkedList<Integer>();
     
     
-    public void secondChance (int pos, int pid) {
+    public void secondChance (int pos) {
 	int accblk = pos/s/p;
 	int buffer, firstbuffer;
 	if(!bindv.containsKey(accblk)) {
@@ -296,12 +306,14 @@ public class Gerente {
 		 binding (accblk, bindv.get(buffer));
 	     }
 		 
-	} 
+	}
+	else pagebit[accblk] = true; //so liga o bit de acesso
     }
 
     static LinkedList<Integer> CList = new LinkedList<Integer>();
     static int pointer = 0;
-    public void clock(int pos, int pid) {
+    
+    public void clock(int pos) {
 	int accblk = pos/s/p, buffer;
 	if(!bindv.containsKey(accblk)) {
 	     if(bindr.size() < realpages){
@@ -322,7 +334,8 @@ public class Gerente {
 		 }
 		 binding (accblk, bindv.get(CList.remove(pointer))); //associa
 	     }	 
-	} 
+	}
+	else pagebit[accblk] = true;
     }
 
     //////////////////////// PRINTS /////////////////////////////////
@@ -401,8 +414,8 @@ public class Gerente {
             this.tipoevento = tipoevento;
         }
 
-        @Override
-        public double compareTo(Cell other) {
+       
+        public int compareTo(Cell other) {
             //multiplied to -1 as the author need descending sort order
             return Double.valueOf(this.tempo).compareTo(other.tempo);
         }
@@ -410,12 +423,14 @@ public class Gerente {
 
     public void executar () {
     	eventos = new ArrayList<Cell>();
+	System.out.println(fila.peek().t0);
     	for (Processo proc : this.fila) {
-    		evento.add(proc, proc.t0, 0, 0);
+	    eventos.add(new Cell (proc, proc.t0, 0, 0));
     		for (int i = 0; i < proc.posacessos.length; i++)
-    			evento.add(proc, proc.tempacessos[i], proc.posacessos[i], 1);
-    		evento.add(proc, proc.tf, 0, 2);
+		    eventos.add(new Cell (proc, proc.tempacessos[i], proc.posacessos[i], 1));
+    		eventos.add(new Cell (proc, proc.tf, 0, 2));
     	}
+	
     	Collections.sort(eventos); //na teoria ta ordenado por tempo
     	double tpassado = 0;
     	for (Cell celula : eventos) {
@@ -423,20 +438,25 @@ public class Gerente {
     			//imprimir(); imprime o que precisa ser impresso na tela
     			tpassado += dt;
     		}
+		
     		switch (celula.tipoevento) {
     			case 0:
     				//criar processo na memoria
     				switch (algespaco) {
     					case 1:
+					        System.out.println("firstfit");
     						firstFit(celula.proc);
     						break;
     					case 2:
+					        System.out.println("nextfit");
     						nextFit(celula.proc);
     						break;
     					case 3:
+					        System.out.println("bestfit");
     						bestFit(celula.proc);
     						break;
     					case 4:
+					        System.out.println("worstfit");
     						worstFit(celula.proc);
     						break;
     					default:
@@ -448,6 +468,7 @@ public class Gerente {
     				//acessar endereço na memoria
     				switch (algsubstitui) {
     					case 1:
+					        System.out.println("optimal");
     						optimal(celula.pos + celula.proc.offset);
     						break;
     					case 2:
@@ -484,16 +505,7 @@ public class Gerente {
             System.out.print("(ep3): ");
             String comando = StdIn.readString();
             if (comando.equals("carrega")) {
-		Processo x;
                 gerente.carregarArquivo (StdIn.readString());
-		x = gerente.fila.remove();
-		gerente.worstFit(x);
-		System.out.println("POsiçoes acesadas");
-		gerente.preProcessOptimal(x);
-		x = gerente.fila.remove();
-		gerente.worstFit(x);
-		System.out.println("POsiçoes acesadas");
-		gerente.preProcessOptimal(x);
             } else if (comando.equals("espaco")) {
                 gerente.algespaco = StdIn.readInt();
                 System.out.println(gerente.algespaco);
@@ -502,6 +514,7 @@ public class Gerente {
                 System.out.println(gerente.algsubstitui);
             } else if (comando.equals("executa")) {
                 gerente.dt = StdIn.readDouble();
+		gerente.executar();
                 System.out.println(gerente.dt);
             } else if (comando.equals("sai")) {
                 System.out.println("saiu!");
