@@ -238,6 +238,21 @@ public class Gerente {
 
     }
 
+    public void kill (Processo Proc) { //mata um processo
+	int vblocks, rblocks;
+	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
+	vblocks = Proc.offset;                               
+	while (vblocks < Proc.offset+Proc.b) {                 //verifica cada bloco
+	    if (bindv.containsKey(vblocks)) {               //se ta na fisica
+		rblocks = bindv.get(vblocks);               //pega esse bloco
+		Mtotal.set(rblocks, rblocks+p, false);    //e limpa
+		bindv.remove(vblocks);                      //removo o bind do v para a r
+		bindr.remove(rblocks);                      //removo o bind do r para o v
+	    }
+	    vblocks += p;
+	}
+    }
+
     //Devolve o equivalente de uma instrução na memoria virtual na real
     public int MMU (int Virt) {
 	int Vblock,Rblock, sector,fin;
@@ -271,11 +286,8 @@ public class Gerente {
 	        for(int i = 0; i < realpages; i++) //se tiver procura
 		    if(!bindr.containsKey(i)){
 			System.out.println("entrou aqui");
-			Mtotal.set(i*s, (i+1)*s); //preenche esse bloco do bitset
-			//imprimindo no arquivo da memoria virtual
-			for (int j = i*p; j < (i+1)*p; j++) {
-			    fprintPagina("/tmp/ep3.mem", Proc.pid, j, s);
-			}
+			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
+
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
 			return;
@@ -371,21 +383,6 @@ public class Gerente {
 	     }	 
 	}
 	else pagebit[accblk] = true;
-    }
-
-    //////////////////////// LEITURA ////////////////////////////////
-
-    public int readPid (String nome, int pagina, int tamanhopag) {
-    	int id = -1;
-        try {
-            RandomAccessFile file = new RandomAccessFile(nome, "rw");
-            file.seek(tamanhopag*pagina);
-            id = file.readInt();
-            file.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return id;    	
     }
 
     //////////////////////// PRINTS /////////////////////////////////
