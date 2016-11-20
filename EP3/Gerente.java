@@ -324,6 +324,157 @@ public class Gerente {
 	     }	 
 	} 
     }
+
+    //////////////////////// PRINTS /////////////////////////////////
+
+    //escreve o arquivo da memória virtual
+    public void fprintVirtual () {
+        BinaryOut virtout = new BinaryOut("/tmp/ep3.vir");
+        for (int i = 0; i < Mvirtual.length(); i++) {
+            if (Mvirtual.get(i))
+                for (int j = 0; j < s*p; j++)
+                    virtout.write(1); //PEGAR O ID DO PROCESSO
+            else
+                for (int j = 0; j < s*p; j++)
+                    virtout.write(-1);
+        }
+        virtout.flush();
+        System.out.println("Arquivo ep3.vir escrito");
+    }
+
+    //escreve o arquivo da memória virtual
+    public void fprintReal () {
+        BinaryOut virtout = new BinaryOut("/tmp/ep3.mem");
+        for (int i = 0; i < Mtotal.length(); i++) {
+            if (Mtotal.get(i))
+                for (int j = 0; j < s*p; j++)
+                    virtout.write(1); //PEGAR O ID DO PROCESSO
+            else
+                for (int j = 0; j < s*p; j++)
+                    virtout.write(-1);
+        }
+        virtout.flush();
+        System.out.println("Arquivo ep3.mem escrito");
+    }
+
+    //printa o estado da memória física
+    public void printReal () {
+        for (int i = 0; i < Mtotal.length(); i++) {
+            if (Mtotal.get(i))
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("1 "); //PEGAR O ID DO PROCESSO
+            else
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("-1 ");
+        }
+    }
+
+    //printa o estado da memória virtual
+    public void printVirtual() {
+        for (int i = 0; i < Mvirtual.length(); i++) {
+            if (Mvirtual.get(i))
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("1 "); //PEGAR O ID DO PROCESSO
+            else
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("-1 ");
+        }
+    }
+
+    //////////////////////////////// executar /////////////////////////////////
+
+    //clase interna criada para ordenar eventos em função do tempo
+
+    public class Cell implements Comparable<Cell> {
+        public final Processo proc;
+        public final double tempo;
+        public final int pos;	//se evento for 0 ou 2 vale 0
+        public final int tipoevento; //0 - inicializa, 1 - acesso, 2 - destroi
+
+        public Cell(Processo proc, double tempo, int pos, int tipoevento) {
+            this.proc = proc;
+            this.tempo = tempo;
+            if (tipoevento == 0 || tipoevento == 2)
+            	this.pos = 0;
+            else
+            	this.pos = pos;
+            this.tipoevento = tipoevento;
+        }
+
+        @Override
+        public double compareTo(Cell other) {
+            //multiplied to -1 as the author need descending sort order
+            return Double.valueOf(this.tempo).compareTo(other.tempo);
+        }
+    }
+
+    public void executar () {
+    	eventos = new ArrayList<Cell>();
+    	for (Processo proc : this.fila) {
+    		evento.add(proc, proc.t0, 0, 0);
+    		for (int i = 0; i < proc.posacessos.length; i++)
+    			evento.add(proc, proc.tempacessos[i], proc.posacessos[i], 1);
+    		evento.add(proc, proc.tf, 0, 2);
+    	}
+    	Collections.sort(eventos); //na teoria ta ordenado por tempo
+    	double tpassado = 0;
+    	for (Cell celula : eventos) {
+    		while (tpassado < celula.tempo) {
+    			//imprimir(); imprime o que precisa ser impresso na tela
+    			tpassado += dt;
+    		}
+    		switch (celula.tipoevento) {
+    			case 0:
+    				//criar processo na memoria
+    				switch (algespaco) {
+    					case 1:
+    						firstFit(celula.proc);
+    						break;
+    					case 2:
+    						nextFit(celula.proc);
+    						break;
+    					case 3:
+    						bestFit(celula.proc);
+    						break;
+    					case 4:
+    						worstFit(celula.proc);
+    						break;
+    					default:
+    						System.out.println("ALGO DEU ERRADO no switch algespaco");
+    						break;
+    				} 
+    				break;
+    			case 1:
+    				//acessar endereço na memoria
+    				switch (algsubstitui) {
+    					case 1:
+    						optimal(celula.pos + celula.proc.offset);
+    						break;
+    					case 2:
+    						//secondChance()
+    						break;
+    					case 3:
+    						//clock()
+    						break;
+    					case 4:
+    						//lru()
+    						break;
+    					default:
+    						System.out.println("ALGO DEU ERRADO no switch algsubstitui");
+    						break;
+    				}
+    				break;
+    			case 2:
+    				//remover(Proc)
+    				//remover processo das memorias
+    				break;
+    			default:
+    				System.out.println("ALGO DEU ERRADO no switch celula.tipoevento");
+    				//na teoria nunca deveria passar
+    				break;
+    		}
+    	}
+    }
     
 	
     // test client
