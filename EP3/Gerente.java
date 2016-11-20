@@ -369,6 +369,22 @@ public class Gerente {
         }
     }
 
+    //////////////////////// PRINTS /////////////////////////////////
+
+    //inicializa uma das memórias com -1
+    public void fprintInicial (String nome, int tamanho) {
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            int numero = -1;
+            for (int i = 0; i < tamanho; i++)
+                file.writeInt(numero);
+            file.close();
+            System.out.println("Arquivo " + nome + " inicializado com " + numero);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     //inicializa uma das memórias com -1
     public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
         try {
@@ -395,6 +411,30 @@ public class Gerente {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void imprimir () {
+        System.out.println("\nMemória Virtual");
+        printArquivo("/tmp/ep3.vir");
+        System.out.println("\nBitmap da memória virtual");
+        printBitSet(Mvirtual);
+        System.out.println("\nMemória física");
+        printArquivo("/tmp/ep3.mem");
+        System.out.println("\nBitmap da memória física");
+        printBitSet(Mtotal);
+    }
+
+    //printa o estado da memória virtual
+    public void printBitSet(BitSet memoria) {
+        for (int i = 0; i < memoria.length(); i++) {
+            if (memoria.get(i))
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("1");
+            else
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("0");
+        }
+        System.out.print("\n");
     }
 
     //////////////////////////////// executar /////////////////////////////////
@@ -438,7 +478,7 @@ public class Gerente {
     	double tpassado = 0;
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-    			//imprimir(); imprime o que precisa ser impresso na tela
+    			imprimir();
     			tpassado += dt;
     		}
 		
@@ -499,6 +539,9 @@ public class Gerente {
     				//na teoria nunca deveria passar
     				break;
     		}
+
+    		System.out.println("Estado final");
+    		imprimir();
     	}
     }
     
