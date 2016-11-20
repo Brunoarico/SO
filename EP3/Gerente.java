@@ -5,6 +5,7 @@
  *****************************************************************************/
 import java.util.*;
 import java.lang.*;
+import java.io.*;
 
 public class Gerente {
 
@@ -20,7 +21,7 @@ public class Gerente {
     BitSet Mvirtual; //bitmap da memoria virtual
     int realpages; //numero de paginas que cabem na Real
     int virtualpages; //numero de paginas que cabem na Virtual
-    static Queue<Double>[] countoptimal;
+    static ArrayList<Queue<Double>> countoptimal;
     TreeMap<Integer, Integer> bindr;
     TreeMap<Integer, Integer> bindv;
     boolean pagebit[];
@@ -78,11 +79,11 @@ public class Gerente {
         virtualpages =(int) (((double)virtual/(double)s)/(double)p);
 	realpages = (int)(((double)total/(double)s)/(double)p);
 	System.out.println("vp = " +virtualpages);
-	countoptimal = new Queue[virtualpages];
+	countoptimal = new ArrayList<Queue<Double>>();
 	System.out.println(virtualpages + " " + realpages);
 	
 	for(int i = 0; i < virtualpages; i++) 
-	    countoptimal[i] = new LinkedList<Double>(); 
+	    countoptimal.add(i, new LinkedList<Double>()); 
 
 	bindv = new TreeMap<Integer, Integer>();
         bindr = new TreeMap<Integer, Integer>();
@@ -235,7 +236,8 @@ public class Gerente {
 	System.out.println(Proc.offset);
 	for (int i = 0; i < Proc.posacessos.length; i++){
 	    System.out.println((Proc.posacessos[i]+Proc.offset)/s/p);
-	    countoptimal[(Proc.posacessos[i]+Proc.offset)/s/p].add(Proc.tempacessos[i]);
+        countoptimal.get((Proc.posacessos[i]+Proc.offset)/s/p).add(Proc.tempacessos[i]);
+	    //countoptimal[(Proc.posacessos[i]+Proc.offset)/s/p].add(Proc.tempacessos[i]);
 	}
     }
 
@@ -261,14 +263,14 @@ public class Gerente {
 	    
 	    else {
 		for(int i : bindr.values()) { //percorre todos que estão na real
-		    if(countoptimal[i].isEmpty()) { //se a pilha de alguem estiver vazia
+		    if(countoptimal.get(i).isEmpty()) { //se a pilha de alguem estiver vazia
 			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
 			System.out.println(Mtotal.toString());
 			System.out.println("Pilha do Bloco " + i +" vazia");
 			return;
 		    }
 		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
-			buffer = countoptimal[i].peek(); //olha o topo da fila
+			buffer = countoptimal.get(i).peek(); //olha o topo da fila
 			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troca
 			System.out.println("Olhando a pilha");
 		    }   
@@ -340,57 +342,45 @@ public class Gerente {
 
     //////////////////////// PRINTS /////////////////////////////////
 
-    //escreve o arquivo da memória virtual
-    public void fprintVirtual () {
-        BinaryOut virtout = new BinaryOut("/tmp/ep3.vir");
-        for (int i = 0; i < Mvirtual.length(); i++) {
-            if (Mvirtual.get(i))
-                for (int j = 0; j < s*p; j++)
-                    virtout.write(1); //PEGAR O ID DO PROCESSO
-            else
-                for (int j = 0; j < s*p; j++)
-                    virtout.write(-1);
-        }
-        virtout.flush();
-        System.out.println("Arquivo ep3.vir escrito");
-    }
-
-    //escreve o arquivo da memória virtual
-    public void fprintReal () {
-        BinaryOut virtout = new BinaryOut("/tmp/ep3.mem");
-        for (int i = 0; i < Mtotal.length(); i++) {
-            if (Mtotal.get(i))
-                for (int j = 0; j < s*p; j++)
-                    virtout.write(1); //PEGAR O ID DO PROCESSO
-            else
-                for (int j = 0; j < s*p; j++)
-                    virtout.write(-1);
-        }
-        virtout.flush();
-        System.out.println("Arquivo ep3.mem escrito");
-    }
-
-    //printa o estado da memória física
-    public void printReal () {
-        for (int i = 0; i < Mtotal.length(); i++) {
-            if (Mtotal.get(i))
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("1 "); //PEGAR O ID DO PROCESSO
-            else
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("-1 ");
+    //inicializa uma das memórias com -1
+    public void fprintInicial (String nome, int tamanho) {
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            int numero = -1;
+            for (int i = 0; i < tamanho; i++)
+                file.writeInt(numero);
+            file.close();
+            System.out.println("Arquivo " + nome + " inicializado com " + numero);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    //printa o estado da memória virtual
-    public void printVirtual() {
-        for (int i = 0; i < Mvirtual.length(); i++) {
-            if (Mvirtual.get(i))
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("1 "); //PEGAR O ID DO PROCESSO
-            else
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("-1 ");
+    //inicializa uma das memórias com -1
+    public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            file.seek(tamanhopag*pagina);
+            for (int i = 0; i < tamanhopag; i++)
+                file.writeInt(pid);
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //printa o arquivo de caminho nome
+    public void printArquivo (String nome) {
+        byte bytef;
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "r");
+            for (int i = 0; i < file.length(); i++) {
+                bytef = file.readByte();
+                System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
