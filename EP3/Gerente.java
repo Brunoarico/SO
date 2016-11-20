@@ -274,7 +274,7 @@ public class Gerente {
     }
 
     //recebe uma posição na memoria virtual pos*/
-    public void optimal (int pos) {
+    public void optimal (int pos, int pid) {
         int accblk = (int) pos/s/p, index = 0;
 	double buffer, larger = 0;
 	System.out.println("unidade " + s + " paginas " + p);
@@ -287,7 +287,10 @@ public class Gerente {
 		    if(!bindr.containsKey(i)){
 			System.out.println("entrou aqui");
 			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
-
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			}
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
 			return;
@@ -317,7 +320,7 @@ public class Gerente {
     static Queue<Integer> SC = new LinkedList<Integer>();
     
     
-    public void secondChance (int pos) {
+    public void secondChance (int pos, int pid) {
 	int accblk = (int)pos/s/p;
 	int buffer, firstbuffer;
 	System.out.println("pos " + pos + " accblk " + accblk);
@@ -325,7 +328,11 @@ public class Gerente {
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
-			 Mtotal.set(i*s, (i+1)*s); //preenche
+			 Mtotal.set(i*p, (i+1)*p); //preenche
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			}
 			 binding (accblk, i); //faz a associação
 			 SC.add(accblk); //entra na fila
 			 System.out.println("Tinha espaço");
@@ -360,13 +367,17 @@ public class Gerente {
     static LinkedList<Integer> CList = new LinkedList<Integer>();
     static int pointer = 0;
     
-    public void clock(int pos) {
+    public void clock(int pos, int pid) {
 	int accblk = pos/s/p, buffer;
 	if(!bindv.containsKey(accblk)) {
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
-			 Mtotal.set(i*s, (i+1)*s); //preenche
+			 Mtotal.set(i*p, (i+1)*p); //preenche
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			}
 			 binding (accblk, i); //faz a associação
 			 CList.add(accblk); //entra na lista
 			 pagebit[accblk] = true; //liga o bit de acesso
@@ -383,6 +394,20 @@ public class Gerente {
 	     }	 
 	}
 	else pagebit[accblk] = true;
+    }
+    //////////////////////// LEITURA ////////////////////////////////
+
+    public int readPid (String nome, int pagina, int tamanhopag) {
+    	int id = -1;
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            file.seek(tamanhopag*pagina);
+            id = file.readInt();
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return id;    	
     }
 
     //////////////////////// PRINTS /////////////////////////////////
@@ -531,15 +556,15 @@ public class Gerente {
     				switch (algsubstitui) {
     					case 1:
 					        System.out.println("optimal");
-    						optimal(celula.pos + celula.proc.offset);
+    						optimal(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 2:
 					        System.out.println("SecondChance");
-					        secondChance(celula.pos + celula.proc.offset);
+					        secondChance(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 3:
 					        System.out.println("Clock");
-					        clock(celula.pos + celula.proc.offset);
+					        clock(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 4:
     						//lru()
