@@ -23,7 +23,7 @@ public class Gerente {
     static Queue<Double>[] countoptimal;
     TreeMap<Integer, Integer> bindr;
     TreeMap<Integer, Integer> bindv;
-
+    boolean pagebit[];
 	
     public class Processo {
         double t0;
@@ -65,6 +65,8 @@ public class Gerente {
         String sargs[] = str.split(" ");
         total = Integer.parseInt(sargs[0]);
         virtual = Integer.parseInt(sargs[1]);
+
+        pagebit = new boolean[virtualpages];
 	
 	Mtotal = new BitSet (total);
 	Mvirtual = new BitSet (virtual);
@@ -236,7 +238,7 @@ public class Gerente {
 
     //recebe uma posição na memoria virtual pos*/
     public void optimal (int pos, int pid) {
-        int accblk = pos/s/p, index;
+        int accblk = pos/s/p, index = 0;
 	double buffer, larger = 0;
 	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
 	    //se não tiver
@@ -245,6 +247,7 @@ public class Gerente {
 	        for(int i = 0; i < realpages; i++) //se tiver procura
 		    if(!bindr.containsKey(i)){ 
 			Mtotal.set(i*s, (i+1)*s); //preenche esse bloco do bitset
+			binding(accblk, i);
 			return;
 		    }
 	    }
@@ -253,18 +256,75 @@ public class Gerente {
 		for(int i : bindr.values()) { //percorre todos que estão na real
 		    if(countoptimal[i].isEmpty()) { //se a pilha de alguem estiver vazia
 			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
+			
 			return;
 		    }
-		    else{ //senão procuro pelo que vai ficar mais tempo sem acesso
+		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
 			buffer = countoptimal[i].peek(); //olha o topo da fila
-			if (buffer >= larger) {large = buffer; index = i;} //se o acesso for mais demorado troca
+			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troca
 		    }   
 		}
-		binding(accblk, bindv.get(index));
+		binding (accblk, bindv.get(index));
 		return;
 	    }	    
 	}
     }
+    static Queue<Integer> SC = new LinkedList<Integer>();
+    
+    
+    public void secondChance (int pos, int pid) {
+	int accblk = pos/s/p;
+	int buffer, firstbuffer;
+	if(!bindv.containsKey(accblk)) {
+	     if(bindr.size() < realpages){
+		 for (int i = 0; i < realpages; i++) //se tiver procura
+		     if(!bindr.containsKey(i)){ //encontrou 
+			 Mtotal.set(i*s, (i+1)*s); //preenche
+			 binding (accblk, i); //faz a associação
+			 SC.add(accblk); //entra na fila
+			 pagebit[accblk] = true; //liga o bit de acesso
+		     }
+	     }
+	     
+	     else {
+		 buffer = firstbuffer = SC.remove(); //tira da fila
+		 while (pagebit[buffer]){ //olha o bit
+		     SC.add(buffer); //se for true devolve
+		     buffer = SC.remove(); //tenta o proximo
+		     if(buffer == firstbuffer) break; //se voltou no primeiro usa o ele
+		 }
+		 binding (accblk, bindv.get(buffer));
+	     }
+		 
+	} 
+    }
+
+    static LinkedList<Integer> CList = new LinkedList<Integer>();
+    static int pointer = 0;
+    public void clock(int pos, int pid) {
+	int accblk = pos/s/p, buffer;
+	if(!bindv.containsKey(accblk)) {
+	     if(bindr.size() < realpages){
+		 for (int i = 0; i < realpages; i++) //se tiver procura
+		     if(!bindr.containsKey(i)){ //encontrou 
+			 Mtotal.set(i*s, (i+1)*s); //preenche
+			 binding (accblk, i); //faz a associação
+			 CList.add(accblk); //entra na lista
+			 pagebit[accblk] = true; //liga o bit de acesso
+		     }
+	     }
+	     
+	     else {
+		 buffer = pointer;
+		 while (pagebit[CList.get(pointer)]) { //olha o bit
+		     pointer = (pointer + 1) % CList.size(); //é circular
+		     if (buffer == pointer) break; //não entra em loop infinito
+		 }
+		 binding (accblk, bindv.get(CList.remove(pointer))); //associa
+	     }	 
+	} 
+    }
+    
 	
     // test client
     public static void main(String[] args) {
