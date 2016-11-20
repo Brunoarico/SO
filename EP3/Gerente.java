@@ -110,6 +110,10 @@ public class Gerente {
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
 		if(count > size) {
 		    Mvirtual.set(beg, beg+size);
+		    //imprimindo no arquivo da memoria virtual
+		    for (int j = beg; j < beg+size; j++) {
+		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    }
 		    //System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg);
 		    return;
@@ -141,6 +145,10 @@ public class Gerente {
 		flag = false;
 		if (count >= size) { //se for maior que size, aloca
 		    Mvirtual.set(beg, beg+size);
+		    //imprimindo no arquivo da memoria virtual
+		    for (int j = beg; j < beg+size; j++) {
+		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    }
 		    here = beg+size; //marca onde parou de olhar
 		    System.out.println(Mvirtual.toString());
 		     Proc.setOffset(beg); // encerra a busca
@@ -178,6 +186,10 @@ public class Gerente {
 	}
 	else {
 	    Mvirtual.set(realbeg, realbeg+size);
+		//imprimindo no arquivo da memoria virtual
+		for (int j = realbeg; j < realbeg+size; j++) {
+		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		}
 	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	    Proc.setOffset(realbeg);
 	}
@@ -208,6 +220,10 @@ public class Gerente {
 	}
 	else {
 	    Mvirtual.set(realbeg, realbeg+size);
+		//imprimindo no arquivo da memoria virtual
+		for (int j = realbeg; j < realbeg+size; j++) {
+		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		}
 	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	     Proc.setOffset(realbeg);
 	}
@@ -369,22 +385,6 @@ public class Gerente {
         }
     }
 
-    //////////////////////// PRINTS /////////////////////////////////
-
-    //inicializa uma das memórias com -1
-    public void fprintInicial (String nome, int tamanho) {
-        try {
-            RandomAccessFile file = new RandomAccessFile(nome, "rw");
-            int numero = -1;
-            for (int i = 0; i < tamanho; i++)
-                file.writeInt(numero);
-            file.close();
-            System.out.println("Arquivo " + nome + " inicializado com " + numero);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     //inicializa uma das memórias com -1
     public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
         try {
@@ -406,6 +406,7 @@ public class Gerente {
             for (int i = 0; i < file.length(); i++) {
                 bytef = file.readByte();
                 System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
+                System.out.print(" ");
             }
 
         } catch (IOException e) {
@@ -540,9 +541,10 @@ public class Gerente {
     				break;
     		}
 
-    		System.out.println("Estado final");
-    		imprimir();
+
     	}
+    	    		System.out.println("Estado final");
+    		imprimir();
     }
     
 	
