@@ -373,6 +373,21 @@ public class Gerente {
 	else pagebit[accblk] = true;
     }
 
+    //////////////////////// LEITURA ////////////////////////////////
+
+    public int readPid (String nome, int pagina, int tamanhopag) {
+    	int id = -1;
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            file.seek(tamanhopag*pagina);
+            id = file.readInt();
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return id;    	
+    }
+
     //////////////////////// PRINTS /////////////////////////////////
 
     //inicializa uma das memórias com -1
