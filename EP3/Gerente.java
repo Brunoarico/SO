@@ -112,7 +112,7 @@ public class Gerente {
 		    Mvirtual.set(beg, beg+size);
 		    //imprimindo no arquivo da memoria virtual
 		    for (int j = beg; j < beg+size; j++) {
-		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
 		    //System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg);
@@ -147,7 +147,7 @@ public class Gerente {
 		    Mvirtual.set(beg, beg+size);
 		    //imprimindo no arquivo da memoria virtual
 		    for (int j = beg; j < beg+size; j++) {
-		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
 		    here = beg+size; //marca onde parou de olhar
 		    System.out.println(Mvirtual.toString());
@@ -188,7 +188,7 @@ public class Gerente {
 	    Mvirtual.set(realbeg, realbeg+size);
 		//imprimindo no arquivo da memoria virtual
 		for (int j = realbeg; j < realbeg+size; j++) {
-		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
 	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	    Proc.setOffset(realbeg);
@@ -222,7 +222,7 @@ public class Gerente {
 	    Mvirtual.set(realbeg, realbeg+size);
 		//imprimindo no arquivo da memoria virtual
 		for (int j = realbeg; j < realbeg+size; j++) {
-		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s*p);
+		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
 	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	     Proc.setOffset(realbeg);
@@ -272,6 +272,10 @@ public class Gerente {
 		    if(!bindr.containsKey(i)){
 			System.out.println("entrou aqui");
 			Mtotal.set(i*s, (i+1)*s); //preenche esse bloco do bitset
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", Proc.pid, j, s);
+			}
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
 			return;
@@ -423,11 +427,12 @@ public class Gerente {
         printArquivo("/tmp/ep3.mem");
         System.out.println("\nBitmap da memória física");
         printBitSet(Mtotal);
+        System.out.println("---");
     }
 
     //printa o estado da memória virtual
     public void printBitSet(BitSet memoria) {
-        for (int i = 0; i < memoria.length(); i++) {
+        for (int i = 0; i < memoria.size(); i++) {
             if (memoria.get(i))
                 for (int j = 0; j < s*p; j++)
                     System.out.print("1");
@@ -477,6 +482,7 @@ public class Gerente {
 	
     	Collections.sort(eventos); //na teoria ta ordenado por tempo
     	double tpassado = 0;
+    	imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
     			imprimir();
