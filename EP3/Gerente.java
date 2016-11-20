@@ -96,6 +96,8 @@ public class Gerente {
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
         }
+        fprintInicial("/tmp/ep3.mem", total);
+        fprintInicial("/tmp/ep3.vir", virtual);
     }
 
     public void firstFit (Processo Proc) {
@@ -384,6 +386,30 @@ public class Gerente {
         }
     }
 
+    public void imprimir () {
+        System.out.println("\nMemória Virtual");
+        printArquivo("/tmp/ep3.vir");
+        System.out.println("\nBitmap da memória virtual");
+        printBitSet(Mvirtual);
+        System.out.println("\nMemória física");
+        printArquivo("/tmp/ep3.mem");
+        System.out.println("\nBitmap da memória física");
+        printBitSet(Mtotal);
+    }
+
+    //printa o estado da memória virtual
+    public void printBitSet(BitSet memoria) {
+        for (int i = 0; i < memoria.length(); i++) {
+            if (memoria.get(i))
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("1");
+            else
+                for (int j = 0; j < s*p; j++)
+                    System.out.print("0");
+        }
+        System.out.print("\n");
+    }
+
     //////////////////////////////// executar /////////////////////////////////
 
     //clase interna criada para ordenar eventos em função do tempo
@@ -425,7 +451,7 @@ public class Gerente {
     	double tpassado = 0;
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-    			//imprimir(); imprime o que precisa ser impresso na tela
+    			imprimir();
     			tpassado += dt;
     		}
 		
@@ -436,6 +462,7 @@ public class Gerente {
     					case 1:
 					        System.out.println("firstfit");
     						firstFit(celula.proc);
+                            imprimir();
     						break;
     					case 2:
 					        System.out.println("nextfit");
