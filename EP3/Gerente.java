@@ -67,8 +67,6 @@ public class Gerente {
         String sargs[] = str.split(" ");
         total = Integer.parseInt(sargs[0]);
         virtual = Integer.parseInt(sargs[1]);
-
-        pagebit = new boolean[virtualpages];
 	
 	Mtotal = new BitSet (total);
 	Mvirtual = new BitSet (virtual);
@@ -78,6 +76,7 @@ public class Gerente {
 
         virtualpages =(int) (((double)virtual/(double)s)/(double)p);
 	realpages = (int)(((double)total/(double)s)/(double)p);
+	pagebit = new boolean[virtualpages];
 	System.out.println("vp = " +virtualpages);
 	countoptimal = new ArrayList<Queue<Double>>();
 	System.out.println(virtualpages + " " + realpages);
@@ -96,7 +95,7 @@ public class Gerente {
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
         }
-        fprintInicial("/tmp/ep3.mem", total);
+	 fprintInicial("/tmp/ep3.mem", total);
         fprintInicial("/tmp/ep3.vir", virtual);
     }
 
@@ -287,8 +286,9 @@ public class Gerente {
     
     
     public void secondChance (int pos) {
-	int accblk = pos/s/p;
+	int accblk = (int)pos/s/p;
 	int buffer, firstbuffer;
+	System.out.println("pos " + pos + " accblk " + accblk);
 	if(!bindv.containsKey(accblk)) {
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
@@ -296,22 +296,33 @@ public class Gerente {
 			 Mtotal.set(i*s, (i+1)*s); //preenche
 			 binding (accblk, i); //faz a associação
 			 SC.add(accblk); //entra na fila
+			 System.out.println("Tinha espaço");
+			 System.out.println(Mtotal.toString());
 			 pagebit[accblk] = true; //liga o bit de acesso
+			 return;
 		     }
 	     }
 	     
 	     else {
 		 buffer = firstbuffer = SC.remove(); //tira da fila
 		 while (pagebit[buffer]){ //olha o bit
+		     System.out.println("O bit de " + buffer + "é true");
 		     SC.add(buffer); //se for true devolve
 		     buffer = SC.remove(); //tenta o proximo
 		     if(buffer == firstbuffer) break; //se voltou no primeiro usa o ele
 		 }
+		 System.out.println("O espaço foi alocado ");
+		 System.out.println(Mtotal.toString());
 		 binding (accblk, bindv.get(buffer));
+		 return;
 	     }
 		 
 	}
-	else pagebit[accblk] = true; //so liga o bit de acesso
+	else{
+	    pagebit[accblk] = true; //so liga o bit de acesso
+	    System.out.println("acessou a pagina " + accblk );
+	    return;
+	}
     }
 
     static LinkedList<Integer> CList = new LinkedList<Integer>();
@@ -386,30 +397,6 @@ public class Gerente {
         }
     }
 
-    public void imprimir () {
-        System.out.println("\nMemória Virtual");
-        printArquivo("/tmp/ep3.vir");
-        System.out.println("\nBitmap da memória virtual");
-        printBitSet(Mvirtual);
-        System.out.println("\nMemória física");
-        printArquivo("/tmp/ep3.mem");
-        System.out.println("\nBitmap da memória física");
-        printBitSet(Mtotal);
-    }
-
-    //printa o estado da memória virtual
-    public void printBitSet(BitSet memoria) {
-        for (int i = 0; i < memoria.length(); i++) {
-            if (memoria.get(i))
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("1");
-            else
-                for (int j = 0; j < s*p; j++)
-                    System.out.print("0");
-        }
-        System.out.print("\n");
-    }
-
     //////////////////////////////// executar /////////////////////////////////
 
     //clase interna criada para ordenar eventos em função do tempo
@@ -451,7 +438,7 @@ public class Gerente {
     	double tpassado = 0;
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-    			imprimir();
+    			//imprimir(); imprime o que precisa ser impresso na tela
     			tpassado += dt;
     		}
 		
@@ -462,7 +449,6 @@ public class Gerente {
     					case 1:
 					        System.out.println("firstfit");
     						firstFit(celula.proc);
-                            imprimir();
     						break;
     					case 2:
 					        System.out.println("nextfit");
@@ -489,10 +475,12 @@ public class Gerente {
     						optimal(celula.pos + celula.proc.offset);
     						break;
     					case 2:
-    						//secondChance()
+					        System.out.println("SecondChance");
+					        secondChance(celula.pos + celula.proc.offset);
     						break;
     					case 3:
-    						//clock()
+					        System.out.println("Clock");
+					        clock(celula.pos + celula.proc.offset);
     						break;
     					case 4:
     						//lru()
