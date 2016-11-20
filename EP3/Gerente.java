@@ -21,6 +21,8 @@ public class Gerente {
     int realpages; //numero de paginas que cabem na Real
     int virtualpages; //numero de paginas que cabem na Virtual
     static Queue<Double>[] countoptimal;
+    TreeMap<Integer, Integer> bindr;
+    TreeMap<Integer, Integer> bindv;
 
 	
     public class Processo {
@@ -236,9 +238,34 @@ public class Gerente {
     public void optimal (int pos, int pid) {
         int accblk = pos/s/p, index;
 	double buffer, larger = 0;
-	
+	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
+	    //se não tiver
+	    
+	    if(bindr.size() < realpages){ //ve se tem espaço livre na memoria real
+	        for(int i = 0; i < realpages; i++) //se tiver procura
+		    if(!bindr.containsKey(i)){ 
+			Mtotal.set(i*s, (i+1)*s); //preenche esse bloco do bitset
+			return;
+		    }
+	    }
+	    
+	    else {
+		for(int i : bindr.values()) { //percorre todos que estão na real
+		    if(countoptimal[i].isEmpty()) { //se a pilha de alguem estiver vazia
+			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
+			return;
+		    }
+		    else{ //senão procuro pelo que vai ficar mais tempo sem acesso
+			buffer = countoptimal[i].peek(); //olha o topo da fila
+			if (buffer >= larger) {large = buffer; index = i;} //se o acesso for mais demorado troca
+		    }   
+		}
+		binding(accblk, bindv.get(index));
+		return;
+	    }	    
+	}
     }
-    
+	
     // test client
     public static void main(String[] args) {
         Gerente gerente = new Gerente();
