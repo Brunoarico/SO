@@ -246,6 +246,10 @@ public class Gerente {
     public void kill (Processo Proc) { //mata um processo
 	int vblocks, rblocks;
 	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
+	//imprimindo no arquivo da memoria virtual
+	for (int j = Proc.offset; j < Proc.offset+Proc.b; j++) {
+		fprintPagina("/tmp/ep3.vir", -1, j, s);
+	}	
 	vblocks = (int)Proc.offset/s/p;                               
 	while (vblocks <= (int)(Proc.offset+Proc.b)/s/p) {                 //verifica cada bloco
 	    System.out.println(vblocks);
@@ -255,6 +259,10 @@ public class Gerente {
 		System.out.println( "Obloco da real é " + rblocks);
 		System.out.println(vblocks+" desassociando "+ rblocks);
 		Mtotal.set(rblocks*p, rblocks*p+p, false);      //e limpa
+		//imprimindo no arquivo da memoria virtual
+		for (int j = rblocks*p; j < rblocks*p+p; j++) {
+			fprintPagina("/tmp/ep3.mem", -1, j, s);
+		}		
 		bindv.remove(vblocks);                      //removo o bind do v para a r
 		bindr.remove(rblocks);                      //removo o bind do r para o v
 	    }
@@ -454,10 +462,10 @@ public class Gerente {
         printArquivo("/tmp/ep3.vir");
         System.out.println("\nBitmap da memória virtual");
         printBitSet(Mvirtual);
-        //System.out.println("\nArquivo Memória física");
-        //printArquivo("/tmp/ep3.mem");
-        //System.out.println("\nBitmap da memória física");
-        //printBitSet(Mtotal);
+        System.out.println("\nArquivo Memória física");
+        printArquivo("/tmp/ep3.mem");
+        System.out.println("\nBitmap da memória física");
+        printBitSet(Mtotal);
         System.out.println("---");
     }
 
@@ -516,7 +524,7 @@ public class Gerente {
     	//imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-		    //imprimir();
+		    imprimir();
 		    tpassado += dt;
     		}
 		
@@ -586,7 +594,7 @@ public class Gerente {
 
     	}
 	System.out.println("Estado final");
-	//imprimir();
+	imprimir();
     }
     
 	
