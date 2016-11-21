@@ -26,6 +26,7 @@ public class Gerente {
     TreeMap<Integer, Integer> bindv;
     boolean pagebit[];
     ArrayList<Cell> eventos;
+    static Queue<Integer> SC = new LinkedList<Integer>();
 	
     public class Processo {
         double t0;
@@ -77,10 +78,8 @@ public class Gerente {
         virtualpages =(int) (((double)virtual/(double)s)/(double)p);
 	realpages = (int)(((double)total/(double)s)/(double)p);
 	pagebit = new boolean[virtualpages];
-	System.out.println("vp = " +virtualpages);
 	countoptimal = new ArrayList<Queue<Double>>();
-	System.out.println(virtualpages + " " + realpages);
-	
+
 	for(int i = 0; i < virtualpages; i++) 
 	    countoptimal.add(i, new LinkedList<Double>()); 
 
@@ -90,22 +89,23 @@ public class Gerente {
 	
         while (!in.isEmpty()) {
             str = in.readLine();
-	    System.out.println(str);
             sargs = str.split(" ");
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
         }
-	 fprintInicial("/tmp/ep3.mem", total);
+	
+	fprintInicial("/tmp/ep3.mem", total);
         fprintInicial("/tmp/ep3.vir", virtual);
     }
 
     public void firstFit (Processo Proc) {
-	int bits = Proc.b;
-	int size = 0;
+	int tam = Proc.b;                                                      
+	int size = 0;                                                        
 	int count = 0, beg = 0;
-	while (size <= bits) size += s;
-	for (int i = 0; i < virtual; i++) {
-	    if (!Mvirtual.get(i)) {
+	while (size <= tam) size += p;                             //somo p até fechar a quantidade minima de paginas
+	Proc.b = size;
+	for (int i = 0; i < virtual; i++) {                         
+	    if (!Mvirtual.get(i)) {                      
 		beg = i;
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
 		if(count > size) {
@@ -114,7 +114,6 @@ public class Gerente {
 		    for (int j = beg; j < beg+size; j++) {
 		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
-		    //System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg);
 		    return;
 		}
@@ -129,30 +128,30 @@ public class Gerente {
     static int here = 0;
     
     public void nextFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
-	int count = 1, beg = 0, i, ii;
+	int count = 0, beg = 0, i, ii;
 	boolean flag = false;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
+	Proc.b = size;
 	for (i = here; i < here + virtual ; i++){
-	    ii = (i % virtual); //para fazer nosso apontador ver toda a memoria
-	    if (ii == 0) count = 1; //a memoria não é circular
-	    if (!Mvirtual.get(ii) && count < size) { //se o bit for zero
-		if (!flag) {beg = ii; flag = true;} //marca o comeco
-		count++; //conta a sequencia de zeros
+	    ii = (i % (virtual-1));                              //para fazer nosso apontador ver toda a memoria
+	    if (ii == 0) count = 0;                              //a memoria não é circular
+	    if (!Mvirtual.get(ii) && count < size) {             //se o bit for zero
+		if (!flag) {beg = ii; flag = true;}              //marca o comeco
+		count++;                                         //conta a sequencia de zeros
 	    }
-	    else { //quando a sequencia acaba
+	    else {                                               //quando a sequencia acaba
 		flag = false;
-		if (count >= size) { //se for maior que size, aloca
+		if (count >= size) {                             //se for maior que size, aloca
 		    Mvirtual.set(beg, beg+size);
 		    //imprimindo no arquivo da memoria virtual
 		    for (int j = beg; j < beg+size; j++) {
 		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
-		    here = beg+size; //marca onde parou de olhar
-		    System.out.println(Mvirtual.toString());
-		     Proc.setOffset(beg); // encerra a busca
-		     return;
+		    here = beg+size+1; //marca onde parou de olhar
+		    Proc.setOffset(beg); // encerra a busca
+		    return;
 		}
 		else count = 0; //senão zera o contador e continua buscando
 	    }
@@ -163,15 +162,15 @@ public class Gerente {
     }
 
     public void bestFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = Integer.MAX_VALUE;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
+	Proc.b = size;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
-
 		if (count > size && count-size < diff) {
 		    realbeg = provbeg;
 		    diff = count-size;
@@ -179,7 +178,6 @@ public class Gerente {
 		else count = 0;
 	    }
 	}
-
 	if (realbeg < 0) {
 	    System.out.println("Não foi possivel alocar a memoria");
 	    System.exit(-1);
@@ -190,17 +188,17 @@ public class Gerente {
 		for (int j = realbeg; j < realbeg+size; j++) {
 		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
-	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	    Proc.setOffset(realbeg);
 	}
 	return;
     }
 
     public void worstFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = -1;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
+	Proc.b = size;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
@@ -224,8 +222,7 @@ public class Gerente {
 		for (int j = realbeg; j < realbeg+size; j++) {
 		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
-	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
-	     Proc.setOffset(realbeg);
+		Proc.setOffset(realbeg);
 	}
 	return;
     }
@@ -238,86 +235,68 @@ public class Gerente {
 
     }
 
-    public void kill (Processo Proc) { //mata um processo
+    //mata um processo
+    public void kill (Processo Proc) { 
 	int vblocks, rblocks;
-	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
-	vblocks = Proc.offset;                               
-	while (vblocks < Proc.offset+Proc.b) {                 //verifica cada bloco
-	    if (bindv.containsKey(vblocks)) {               //se ta na fisica
-		rblocks = bindv.get(vblocks);               //pega esse bloco
-		Mtotal.set(rblocks, rblocks+p, false);    //e limpa
-		bindv.remove(vblocks);                      //removo o bind do v para a r
-		bindr.remove(rblocks);                      //removo o bind do r para o v
+	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); 
+	for (int j = Proc.offset; j < Proc.offset+Proc.b; j++) {
+	    fprintPagina("/tmp/ep3.vir", -1, j, s);
+	}	
+	vblocks = (int)Proc.offset/s/p;                               
+	while (vblocks <= (int)(Proc.offset+Proc.b)/s/p) {
+	    if (bindv.containsKey(vblocks)) {
+		rblocks = bindv.get(vblocks);               
+		Mtotal.set(rblocks*p, rblocks*p+p, false);      
+		for (int j = rblocks*p; j < rblocks*p+p; j++) {
+		    fprintPagina("/tmp/ep3.mem", -1, j, s);
+		}		
+		bindv.remove(vblocks);                     
+		bindr.remove(rblocks);                     
 	    }
-	    vblocks += p;
+	    vblocks += 1;
 	}
     }
 
-    //Devolve o equivalente de uma instrução na memoria virtual na real
-    public int MMU (int Virt) {
-	int Vblock,Rblock, sector,fin;
-	Vblock = (Virt/p); //encontro sobre qual pagina age a instrução
-	Rblock = bindv.get(Vblock);; //acho a equivalente na memoria Real
-	sector = Virt % s; //acho o setor da pagina
-	fin = Rblock * s + sector; //Faz a translação do bloco
-	System.out.println(Rblock + " " + sector + " " + fin);
-        return fin;
-    }
 
-    public  void preProcessOptimal (Processo Proc) {
-	System.out.println(Proc.offset);
-	for (int i = 0; i < Proc.posacessos.length; i++){
-	    System.out.println((Proc.posacessos[i]+Proc.offset)/s/p);
-        countoptimal.get((Proc.posacessos[i]+Proc.offset)/s/p).add(Proc.tempacessos[i]);
-	    //countoptimal[(Proc.posacessos[i]+Proc.offset)/s/p].add(Proc.tempacessos[i]);
-	}
-    }
-
-    //recebe uma posição na memoria virtual pos*/
-    public void optimal (int pos) {
-        int accblk = (int) pos/s/p, index = 0;
+    //recebe uma posição na memoria virtual pos
+    public void optimal (int pos, int pid) {
+        int accblk = (int) (pos/s/p)%countoptimal.size(), index = 0;
 	double buffer, larger = 0;
-	System.out.println("unidade " + s + " paginas " + p);
-	System.out.println("pos " + pos + " accblk " + accblk);
-	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
-	    //se não tiver
-	    System.out.println(accblk);
-	    if(bindr.size() < realpages){ //ve se tem espaço livre na memoria real
-	        for(int i = 0; i < realpages; i++) //se tiver procura
-		    if(!bindr.containsKey(i)){
-			System.out.println("entrou aqui");
-			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
 
-			System.out.println(Mtotal.toString());
+	
+	if(!bindv.containsKey(accblk)) {
+
+	    if(bindr.size() < realpages){                 //ve se tem espaço livre na memoria real
+	        for(int i = 0; i < realpages; i++)        //se tiver procura
+		    if(!bindr.containsKey(i)){
+			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			}
 			binding(accblk, i);
 			return;
 		    }
 	    }
-	    
 	    else {
 		for(int i : bindr.values()) { //percorre todos que estão na real
 		    if(countoptimal.get(i).isEmpty()) { //se a pilha de alguem estiver vazia
 			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
-			System.out.println(Mtotal.toString());
-			System.out.println("Pilha do Bloco " + i +" vazia");
 			return;
 		    }
 		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
 			buffer = countoptimal.get(i).peek(); //olha o topo da fila
-			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troca
-			System.out.println("Olhando a pilha");
+			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troc
 		    }   
 		}
 		binding (accblk, bindv.get(index));
 		return;
 	    }	    
 	}
-	else System.out.println("Ela existe");
     }
-    static Queue<Integer> SC = new LinkedList<Integer>();
     
     
-    public void secondChance (int pos) {
+    public void secondChance (int pos, int pid) {
 	int accblk = (int)pos/s/p;
 	int buffer, firstbuffer;
 	System.out.println("pos " + pos + " accblk " + accblk);
@@ -325,13 +304,19 @@ public class Gerente {
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
-			 Mtotal.set(i*s, (i+1)*s); //preenche
-			 binding (accblk, i); //faz a associação
-			 SC.add(accblk); //entra na fila
-			 System.out.println("Tinha espaço");
-			 System.out.println(Mtotal.toString());
-			 pagebit[accblk] = true; //liga o bit de acesso
-			 return;
+			 Mtotal.set(i*p, (i+1)*p); //preenche
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			    System.out.println("escrevendo");
+			}
+			System.out.println("Associa " + accblk + " a " + i);
+			binding (accblk, i); //faz a associação
+			SC.add(accblk); //entra na fila
+			System.out.println("Tinha espaço");
+			System.out.println(Mtotal.toString());
+			pagebit[accblk] = true; //liga o bit de acesso
+			return;
 		     }
 	     }
 	     
@@ -339,16 +324,16 @@ public class Gerente {
 		 buffer = firstbuffer = SC.remove(); //tira da fila
 		 while (pagebit[buffer]){ //olha o bit
 		     System.out.println("O bit de " + buffer + "é true");
-		     SC.add(buffer); //se for true devolve
+		     SC.add(buffer); //se for true devolve 
 		     buffer = SC.remove(); //tenta o proximo
 		     if(buffer == firstbuffer) break; //se voltou no primeiro usa o ele
+		 
 		 }
-		 System.out.println("O espaço foi alocado ");
+		 System.out.println("O espaço foi alocado "+ buffer);
 		 System.out.println(Mtotal.toString());
 		 binding (accblk, bindv.get(buffer));
 		 return;
-	     }
-		 
+	     }	 
 	}
 	else{
 	    pagebit[accblk] = true; //so liga o bit de acesso
@@ -360,13 +345,17 @@ public class Gerente {
     static LinkedList<Integer> CList = new LinkedList<Integer>();
     static int pointer = 0;
     
-    public void clock(int pos) {
+    public void clock(int pos, int pid) {
 	int accblk = pos/s/p, buffer;
 	if(!bindv.containsKey(accblk)) {
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
-			 Mtotal.set(i*s, (i+1)*s); //preenche
+			 Mtotal.set(i*p, (i+1)*p); //preenche
+			//imprimindo no arquivo da memoria virtual
+			for (int j = i*p; j < (i+1)*p; j++) {
+			    fprintPagina("/tmp/ep3.mem", pid, j, p);
+			}
 			 binding (accblk, i); //faz a associação
 			 CList.add(accblk); //entra na lista
 			 pagebit[accblk] = true; //liga o bit de acesso
@@ -383,6 +372,20 @@ public class Gerente {
 	     }	 
 	}
 	else pagebit[accblk] = true;
+    }
+    //////////////////////// LEITURA ////////////////////////////////
+
+    public int readPid (String nome, int pagina, int tamanhopag) {
+    	int id = -1;
+        try {
+            RandomAccessFile file = new RandomAccessFile(nome, "rw");
+            file.seek(tamanhopag*pagina);
+            id = file.readInt();
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return id;    	
     }
 
     //////////////////////// PRINTS /////////////////////////////////
@@ -401,13 +404,13 @@ public class Gerente {
         }
     }
 
-    //inicializa uma das memórias com -1
     public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "rw");
-            file.seek(tamanhopag*pagina);
-            for (int i = 0; i < tamanhopag; i++)
+            file.seek(tamanhopag * pagina * 4);
+            for (int i = 0; i < tamanhopag; i++){
                 file.writeInt(pid);
+	    }
             file.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -416,13 +419,15 @@ public class Gerente {
 
     //printa o arquivo de caminho nome
     public void printArquivo (String nome) {
-        byte bytef;
+        int bytef;
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "r");
-            for (int i = 0; i < file.length(); i++) {
-                bytef = file.readByte();
-                System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
-                System.out.print(" ");
+	    System.out.println(file.length());
+            for (int i = 0; i < file.length()/4; i++) {
+                bytef = file.readInt();
+		System.out.print(bytef + " ");
+                //System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
+                //System.out.print(" ");
             }
 
         } catch (IOException e) {
@@ -431,14 +436,14 @@ public class Gerente {
     }
 
     public void imprimir () {
-        System.out.println("\nMemória Virtual");
+        System.out.println("\n Arquivo Memória Virtual");
         printArquivo("/tmp/ep3.vir");
         System.out.println("\nBitmap da memória virtual");
         printBitSet(Mvirtual);
-        System.out.println("\nMemória física");
-        printArquivo("/tmp/ep3.mem");
-        System.out.println("\nBitmap da memória física");
-        printBitSet(Mtotal);
+        //System.out.println("\nArquivo Memória física");
+        //printArquivo("/tmp/ep3.mem");
+        //System.out.println("\nBitmap da memória física");
+        //printBitSet(Mtotal);
         System.out.println("---");
     }
 
@@ -477,14 +482,13 @@ public class Gerente {
 
        
         public int compareTo(Cell other) {
-            //multiplied to -1 as the author need descending sort order
             return Double.valueOf(this.tempo).compareTo(other.tempo);
         }
     }
 
     public void executar () {
+	double dtR = 2;
     	eventos = new ArrayList<Cell>();
-	System.out.println(fila.peek().t0);
     	for (Processo proc : this.fila) {
 	    eventos.add(new Cell (proc, proc.t0, 0, 0));
     		for (int i = 0; i < proc.posacessos.length; i++)
@@ -492,33 +496,39 @@ public class Gerente {
     		eventos.add(new Cell (proc, proc.tf, 0, 2));
     	}
 	
-    	Collections.sort(eventos); //na teoria ta ordenado por tempo
-    	double tpassado = 0;
+    	Collections.sort(eventos); 
+    	double tpassado = 0, tzerarbitR = 0 ;
     	imprimir();
     	for (Cell celula : eventos) {
-    		while (tpassado < celula.tempo) {
-    			imprimir();
-    			tpassado += dt;
-    		}
+    		while (tpassado < celula.tempo && tzerarbitR <= celula.tempo) {
+		    if (tpassado <= celula.tempo) {
+			imprimir();
+			tpassado += dt;
+		    }
+    		
+		    if (tzerarbitR <= celula.tempo) {
+			for(int i =0; i < pagebit.length; i++) pagebit[i] = false;
+			tzerarbitR += dtR;
+		    }
+		}  
 		
     		switch (celula.tipoevento) {
     			case 0:
     				//criar processo na memoria
     				switch (algespaco) {
     					case 1:
-					        System.out.println("firstfit");
     						firstFit(celula.proc);
     						break;
     					case 2:
-					        System.out.println("nextfit");
+
     						nextFit(celula.proc);
     						break;
     					case 3:
-					        System.out.println("bestfit");
+
     						bestFit(celula.proc);
     						break;
     					case 4:
-					        System.out.println("worstfit");
+
     						worstFit(celula.proc);
     						break;
     					default:
@@ -530,19 +540,18 @@ public class Gerente {
     				//acessar endereço na memoria
     				switch (algsubstitui) {
     					case 1:
-					        System.out.println("optimal");
-    						optimal(celula.pos + celula.proc.offset);
+
+    						optimal(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 2:
-					        System.out.println("SecondChance");
-					        secondChance(celula.pos + celula.proc.offset);
+					        secondChance(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 3:
-					        System.out.println("Clock");
-					        clock(celula.pos + celula.proc.offset);
+
+					        clock(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 4:
-    						//lru()
+					        System.out.println("Não implementado =/");
     						break;
     					default:
     						System.out.println("ALGO DEU ERRADO no switch algsubstitui");
@@ -550,19 +559,21 @@ public class Gerente {
     				}
     				break;
     			case 2:
-    				//remover(Proc)
-    				//remover processo das memorias
+			   
+			    kill(celula.proc);
+
+
     				break;
     			default:
     				System.out.println("ALGO DEU ERRADO no switch celula.tipoevento");
-    				//na teoria nunca deveria passar
+
     				break;
     		}
 
 
     	}
-    	    		System.out.println("Estado final");
-    		imprimir();
+	System.out.println("Estado final");
+	imprimir();
     }
     
 	
