@@ -95,26 +95,30 @@ public class Gerente {
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
         }
-	 fprintInicial("/tmp/ep3.mem", total);
+	
+	fprintInicial("/tmp/ep3.mem", total);
         fprintInicial("/tmp/ep3.vir", virtual);
+	
+	//imprimir();
     }
 
     public void firstFit (Processo Proc) {
-	int bits = Proc.b;
-	int size = 0;
+	int tam = Proc.b;                                                        //tamanho do processo em bytes
+	int size = 0;                                                            //quantidade de s
 	int count = 0, beg = 0;
-	while (size <= bits) size += s;
-	for (int i = 0; i < virtual; i++) {
-	    if (!Mvirtual.get(i)) {
+	while (size <= tam) size += p;                             //somo p até fechar a quantidade minima de paginas
+	for (int i = 0; i < virtual; i++) {                         
+	    if (!Mvirtual.get(i)) {                      
 		beg = i;
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
 		if(count > size) {
 		    Mvirtual.set(beg, beg+size);
 		    //imprimindo no arquivo da memoria virtual
+		    System.out.println("PID: " + Proc.pid);
+		    System.out.println(Mvirtual.toString());
 		    for (int j = beg; j < beg+size; j++) {
 		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
-		    //System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg);
 		    return;
 		}
@@ -129,11 +133,11 @@ public class Gerente {
     static int here = 0;
     
     public void nextFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
-	int count = 1, beg = 0, i, ii;
+	int count = 0, beg = 0, i, ii;
 	boolean flag = false;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
 	for (i = here; i < here + virtual ; i++){
 	    ii = (i % virtual); //para fazer nosso apontador ver toda a memoria
 	    if (ii == 0) count = 1; //a memoria não é circular
@@ -163,10 +167,10 @@ public class Gerente {
     }
 
     public void bestFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = Integer.MAX_VALUE;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
@@ -197,10 +201,10 @@ public class Gerente {
     }
 
     public void worstFit (Processo Proc) {
-	int bits = Proc.b;
+	int tam = Proc.b;
 	int size = 0;
 	int provbeg = 0, realbeg = -1, count = 0, diff = -1;
-	while (size <= bits) size += s;
+	while (size <= tam) size += p;
 	for (int i = 0; i < virtual; i++) {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
@@ -253,27 +257,8 @@ public class Gerente {
 	}
     }
 
-    //Devolve o equivalente de uma instrução na memoria virtual na real
-    public int MMU (int Virt) {
-	int Vblock,Rblock, sector,fin;
-	Vblock = (Virt/p); //encontro sobre qual pagina age a instrução
-	Rblock = bindv.get(Vblock);; //acho a equivalente na memoria Real
-	sector = Virt % s; //acho o setor da pagina
-	fin = Rblock * s + sector; //Faz a translação do bloco
-	System.out.println(Rblock + " " + sector + " " + fin);
-        return fin;
-    }
 
-    public  void preProcessOptimal (Processo Proc) {
-	System.out.println(Proc.offset);
-	for (int i = 0; i < Proc.posacessos.length; i++){
-	    System.out.println((Proc.posacessos[i]+Proc.offset)/s/p);
-        countoptimal.get((Proc.posacessos[i]+Proc.offset)/s/p).add(Proc.tempacessos[i]);
-	    //countoptimal[(Proc.posacessos[i]+Proc.offset)/s/p].add(Proc.tempacessos[i]);
-	}
-    }
-
-    //recebe uma posição na memoria virtual pos*/
+    //recebe uma posição na memoria virtual pos
     public void optimal (int pos, int pid) {
         int accblk = (int) pos/s/p, index = 0;
 	double buffer, larger = 0;
@@ -289,7 +274,7 @@ public class Gerente {
 			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
-			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			    fprintPagina("/tmp/ep3.mem", pid, j, p);
 			}
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
@@ -332,6 +317,7 @@ public class Gerente {
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
 			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			    System.out.println("escrevendo");
 			}
 			 binding (accblk, i); //faz a associação
 			 SC.add(accblk); //entra na fila
@@ -376,7 +362,7 @@ public class Gerente {
 			 Mtotal.set(i*p, (i+1)*p); //preenche
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
-			    fprintPagina("/tmp/ep3.mem", pid, j, s);
+			    fprintPagina("/tmp/ep3.mem", pid, j, p);
 			}
 			 binding (accblk, i); //faz a associação
 			 CList.add(accblk); //entra na lista
@@ -426,13 +412,13 @@ public class Gerente {
         }
     }
 
-    //inicializa uma das memórias com -1
     public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "rw");
-            file.seek(tamanhopag*pagina);
-            for (int i = 0; i < tamanhopag; i++)
-                file.writeInt(pid);
+            file.seek(tamanhopag * pagina);
+            for (int i = 0; i < tamanhopag; i++){
+                file.write(pid);
+	    }
             file.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -444,10 +430,12 @@ public class Gerente {
         byte bytef;
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "r");
+	    System.out.println(file.length());
             for (int i = 0; i < file.length(); i++) {
                 bytef = file.readByte();
-                System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
-                System.out.print(" ");
+		System.out.print(bytef + " ");
+                //System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
+                //System.out.print(" ");
             }
 
         } catch (IOException e) {
@@ -456,11 +444,11 @@ public class Gerente {
     }
 
     public void imprimir () {
-        System.out.println("\nMemória Virtual");
+        System.out.println("\n Arquivo Memória Virtual");
         printArquivo("/tmp/ep3.vir");
         System.out.println("\nBitmap da memória virtual");
         printBitSet(Mvirtual);
-        System.out.println("\nMemória física");
+        System.out.println("\nArquivo Memória física");
         printArquivo("/tmp/ep3.mem");
         System.out.println("\nBitmap da memória física");
         printBitSet(Mtotal);
@@ -519,11 +507,11 @@ public class Gerente {
 	
     	Collections.sort(eventos); //na teoria ta ordenado por tempo
     	double tpassado = 0;
-    	imprimir();
+    	//imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-    			imprimir();
-    			tpassado += dt;
+		    imprimir();
+		    tpassado += dt;
     		}
 		
     		switch (celula.tipoevento) {
@@ -586,8 +574,8 @@ public class Gerente {
 
 
     	}
-    	    		System.out.println("Estado final");
-    		imprimir();
+	System.out.println("Estado final");
+	//imprimir();
     }
     
 	
