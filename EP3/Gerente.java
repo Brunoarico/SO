@@ -416,9 +416,9 @@ public class Gerente {
     public void fprintPagina (String nome, int pid, int pagina, int tamanhopag) {
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "rw");
-            file.seek(tamanhopag * pagina);
+            file.seek(tamanhopag * pagina * 4);
             for (int i = 0; i < tamanhopag; i++){
-                file.write(pid);
+                file.writeInt(pid);
 	    }
             file.close();
         } catch (IOException e) {
@@ -428,12 +428,12 @@ public class Gerente {
 
     //printa o arquivo de caminho nome
     public void printArquivo (String nome) {
-        byte bytef;
+        int bytef;
         try {
             RandomAccessFile file = new RandomAccessFile(nome, "r");
 	    System.out.println(file.length());
-            for (int i = 0; i < file.length(); i++) {
-                bytef = file.readByte();
+            for (int i = 0; i < file.length()/4; i++) {
+                bytef = file.readInt();
 		System.out.print(bytef + " ");
                 //System.out.print(String.format("%8s", Integer.toBinaryString(bytef)).replace(' ', '0'));
                 //System.out.print(" ");
@@ -508,10 +508,10 @@ public class Gerente {
 	
     	Collections.sort(eventos); //na teoria ta ordenado por tempo
     	double tpassado = 0;
-    	//imprimir();
+    	imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-		    //imprimir();
+		    imprimir();
 		    tpassado += dt;
     		}
 		
@@ -575,11 +575,11 @@ public class Gerente {
     				//na teoria nunca deveria passar
     				break;
     		}
-
+    		// carrega data.txt espaco 1 substitui 1 executa 50
 
     	}
 	System.out.println("Estado final");
-	//imprimir();
+	imprimir();
     }
     
 	
