@@ -246,15 +246,19 @@ public class Gerente {
     public void kill (Processo Proc) { //mata um processo
 	int vblocks, rblocks;
 	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
-	vblocks = Proc.offset;                               
-	while (vblocks <= Proc.offset+Proc.b) {                 //verifica cada bloco
+	vblocks = (int)Proc.offset/s/p;                               
+	while (vblocks <= (int)(Proc.offset+Proc.b)/s/p) {                 //verifica cada bloco
+	    System.out.println(vblocks);
 	    if (bindv.containsKey(vblocks)) {               //se ta na fisica
+		System.out.println("limpa..");
 		rblocks = bindv.get(vblocks);               //pega esse bloco
-		Mtotal.set(rblocks, rblocks+p, false);       //e limpa
+		System.out.println( "Obloco da real é " + rblocks);
+		System.out.println(vblocks+" desassociando "+ rblocks);
+		Mtotal.set(rblocks*p, rblocks*p+p, false);      //e limpa
 		bindv.remove(vblocks);                      //removo o bind do v para a r
 		bindr.remove(rblocks);                      //removo o bind do r para o v
 	    }
-	    vblocks += p;
+	    vblocks += 1;
 	}
     }
 
@@ -263,7 +267,7 @@ public class Gerente {
     public void optimal (int pos, int pid) {
         int accblk = (int) pos/s/p, index = 0;
 	double buffer, larger = 0;
-	System.out.println("unidade " + s + " paginas " + p);
+	//System.out.println("unidade " + s + " paginas " + p);
 	System.out.println("pos " + pos + " accblk " + accblk);
 	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
 	    //se não tiver
@@ -279,6 +283,7 @@ public class Gerente {
 			}
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
+			System.out.println(accblk + " associado " + i);
 			return;
 		    }
 	    }
@@ -293,7 +298,7 @@ public class Gerente {
 		    }
 		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
 			buffer = countoptimal.get(i).peek(); //olha o topo da fila
-			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troca
+			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troc
 			System.out.println("Olhando a pilha");
 		    }   
 		}
@@ -508,10 +513,10 @@ public class Gerente {
 	
     	Collections.sort(eventos); //na teoria ta ordenado por tempo
     	double tpassado = 0;
-    	imprimir();
+    	//imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-		    imprimir();
+		    //imprimir();
 		    tpassado += dt;
     		}
 		
@@ -565,9 +570,11 @@ public class Gerente {
     				break;
     			case 2:
 			    System.out.println("Morreu o processo " + celula.proc.pid);
-			    System.out.println(Mtotal.toString());
+			    System.out.println("Fisica " + Mtotal.toString());
+			    System.out.println("Virtual " +Mvirtual.toString());
 			    kill(celula.proc);
-			    System.out.println(Mtotal.toString());
+			    System.out.println("Fisica " + Mtotal.toString());
+			    System.out.println("Virtual " +Mvirtual.toString());
     				//remover processo das memorias
     				break;
     			default:
@@ -575,11 +582,11 @@ public class Gerente {
     				//na teoria nunca deveria passar
     				break;
     		}
-    		// carrega data.txt espaco 1 substitui 1 executa 50
+
 
     	}
 	System.out.println("Estado final");
-	imprimir();
+	//imprimir();
     }
     
 	
