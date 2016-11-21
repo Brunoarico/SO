@@ -26,7 +26,8 @@ public class Gerente {
     TreeMap<Integer, Integer> bindv;
     boolean pagebit[];
     ArrayList<Cell> eventos;
-	
+    static Queue<Integer> SC = new LinkedList<Integer>();
+    int pagefault = 0;
     public class Processo {
         double t0;
         double tf;
@@ -77,10 +78,8 @@ public class Gerente {
         virtualpages =(int) (((double)virtual/(double)s)/(double)p);
 	realpages = (int)(((double)total/(double)s)/(double)p);
 	pagebit = new boolean[virtualpages];
-	System.out.println("vp = " +virtualpages);
 	countoptimal = new ArrayList<Queue<Double>>();
-	System.out.println(virtualpages + " " + realpages);
-	
+
 	for(int i = 0; i < virtualpages; i++) 
 	    countoptimal.add(i, new LinkedList<Double>()); 
 
@@ -90,7 +89,6 @@ public class Gerente {
 	
         while (!in.isEmpty()) {
             str = in.readLine();
-	    System.out.println(str);
             sargs = str.split(" ");
 	    fila.add(new Processo(sargs, pidt));
             pidt++;
@@ -98,13 +96,11 @@ public class Gerente {
 	
 	fprintInicial("/tmp/ep3.mem", total);
         fprintInicial("/tmp/ep3.vir", virtual);
-	
-	//imprimir();
     }
 
     public void firstFit (Processo Proc) {
-	int tam = Proc.b;                                                        //tamanho do processo em bytes
-	int size = 0;                                                            //quantidade de s
+	int tam = Proc.b;                                                      
+	int size = 0;                                                        
 	int count = 0, beg = 0;
 	while (size <= tam) size += p;                             //somo p até fechar a quantidade minima de paginas
 	Proc.b = size;
@@ -115,8 +111,6 @@ public class Gerente {
 		if(count > size) {
 		    Mvirtual.set(beg, beg+size);
 		    //imprimindo no arquivo da memoria virtual
-		    System.out.println("PID: " + Proc.pid);
-		    System.out.println(Mvirtual.toString());
 		    for (int j = beg; j < beg+size; j++) {
 		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
@@ -156,9 +150,7 @@ public class Gerente {
 		    	fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		    }
 		    here = beg+size+1; //marca onde parou de olhar
-		    System.out.println(Mvirtual.toString());
 		    Proc.setOffset(beg); // encerra a busca
-		    System.out.println("Programa nasce em " +beg);
 		    return;
 		}
 		else count = 0; //senão zera o contador e continua buscando
@@ -179,7 +171,6 @@ public class Gerente {
 	    if (!Mvirtual.get(i)) {
 		provbeg = i;
 		while (!Mvirtual.get(i) && i < virtual) {i++; count++;}
-		System.out.println("Count é : " + count + " size é " + size) ;
 		if (count > size && count-size < diff) {
 		    realbeg = provbeg;
 		    diff = count-size;
@@ -187,7 +178,6 @@ public class Gerente {
 		else count = 0;
 	    }
 	}
-
 	if (realbeg < 0) {
 	    System.out.println("Não foi possivel alocar a memoria");
 	    System.exit(-1);
@@ -198,7 +188,6 @@ public class Gerente {
 		for (int j = realbeg; j < realbeg+size; j++) {
 		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
-	    System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 	    Proc.setOffset(realbeg);
 	}
 	return;
@@ -220,7 +209,6 @@ public class Gerente {
 		    diff = count-size;
 		}
 		else count = 0;
-		System.out.println("size = " + size +" count = " + count + "beg = " + realbeg);
 	    }
 	}
 
@@ -230,12 +218,10 @@ public class Gerente {
 	}
 	else {
 	    Mvirtual.set(realbeg, realbeg+size);
-	    System.out.println("alocado em : " + realbeg); 
 		//imprimindo no arquivo da memoria virtual
 		for (int j = realbeg; j < realbeg+size; j++) {
 		    fprintPagina("/tmp/ep3.vir", Proc.pid, j, s);
 		}
-		System.out.println(Mvirtual.toString() + " " + Mvirtual.length());
 		Proc.setOffset(realbeg);
 	}
 	return;
@@ -249,28 +235,23 @@ public class Gerente {
 
     }
 
-    public void kill (Processo Proc) { //mata um processo
+    //mata um processo
+    public void kill (Processo Proc) { 
 	int vblocks, rblocks;
-	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
-	//imprimindo no arquivo da memoria virtual
+	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); 
 	for (int j = Proc.offset; j < Proc.offset+Proc.b; j++) {
 	    fprintPagina("/tmp/ep3.vir", -1, j, s);
 	}	
 	vblocks = (int)Proc.offset/s/p;                               
-	while (vblocks <= (int)(Proc.offset+Proc.b)/s/p) {                 //verifica cada bloco
-	    System.out.println(vblocks);
-	    if (bindv.containsKey(vblocks)) {               //se ta na fisica
-		System.out.println("limpa..");
-		rblocks = bindv.get(vblocks);               //pega esse bloco
-		System.out.println( "Obloco da real é " + rblocks);
-		System.out.println(vblocks+" desassociando "+ rblocks);
-		Mtotal.set(rblocks*p, rblocks*p+p, false);      //e limpa
-		//imprimindo no arquivo da memoria virtual
+	while (vblocks <= (int)(Proc.offset+Proc.b)/s/p) {
+	    if (bindv.containsKey(vblocks)) {
+		rblocks = bindv.get(vblocks);               
+		Mtotal.set(rblocks*p, rblocks*p+p, false);      
 		for (int j = rblocks*p; j < rblocks*p+p; j++) {
 		    fprintPagina("/tmp/ep3.mem", -1, j, s);
 		}		
-		bindv.remove(vblocks);                      //removo o bind do v para a r
-		bindr.remove(rblocks);                      //removo o bind do r para o v
+		bindv.remove(vblocks);                     
+		bindr.remove(rblocks);                     
 	    }
 	    vblocks += 1;
 	}
@@ -282,50 +263,37 @@ public class Gerente {
         int accblk = (int) (pos/s/p)%countoptimal.size(), index = 0;
 	double buffer, larger = 0;
 
-	System.out.println("pos " + pos + " accblk " + accblk);
 	
-	if(!bindv.containsKey(accblk)) {//verifica se tem o bloco associado a real
-	    //se não tiver
-	    System.out.println("Bloco " + accblk + " não associado ao real");
+	if(!bindv.containsKey(accblk)) {
+	    pagefault++;
 	    if(bindr.size() < realpages){                 //ve se tem espaço livre na memoria real
-		System.out.println("Tem espaço!");
 	        for(int i = 0; i < realpages; i++)        //se tiver procura
 		    if(!bindr.containsKey(i)){
-			System.out.println("Achou o bloco da real" + i +" sem associação");
 			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
 			    fprintPagina("/tmp/ep3.mem", pid, j, s);
 			}
-			System.out.println("Preencheu o bloco de " + i*p +" até "+ (1+i)*p);
-			System.out.println(Mtotal.toString());
 			binding(accblk, i);
-			System.out.println(accblk + " associado a" + i);
 			return;
 		    }
 	    }
 	    else {
 		for(int i : bindr.values()) { //percorre todos que estão na real
-		    System.out.println(countoptimal.size());
 		    if(countoptimal.get(i).isEmpty()) { //se a pilha de alguem estiver vazia
 			binding(accblk, bindv.get(i)); //associo o novo bloco ao da antiga
-			System.out.println(Mtotal.toString());
-			System.out.println("Pilha do Bloco " + i +" vazia");
 			return;
 		    }
 		    else { //senão procuro pelo que vai ficar mais tempo sem acesso
 			buffer = countoptimal.get(i).peek(); //olha o topo da fila
 			if (buffer >= larger) {larger = buffer; index = i;} //se o acesso for mais demorado troc
-			System.out.println("Olhando a pilha");
 		    }   
 		}
 		binding (accblk, bindv.get(index));
 		return;
 	    }	    
 	}
-	else System.out.println("Ela existe");
     }
-    static Queue<Integer> SC = new LinkedList<Integer>();
     
     
     public void secondChance (int pos, int pid) {
@@ -333,6 +301,7 @@ public class Gerente {
 	int buffer, firstbuffer;
 	System.out.println("pos " + pos + " accblk " + accblk);
 	if(!bindv.containsKey(accblk)) {
+	    pagefault++;
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
@@ -380,6 +349,7 @@ public class Gerente {
     public void clock(int pos, int pid) {
 	int accblk = pos/s/p, buffer;
 	if(!bindv.containsKey(accblk)) {
+	    pagefault++;
 	     if(bindr.size() < realpages){
 		 for (int i = 0; i < realpages; i++) //se tiver procura
 		     if(!bindr.containsKey(i)){ //encontrou 
@@ -514,7 +484,6 @@ public class Gerente {
 
        
         public int compareTo(Cell other) {
-            //multiplied to -1 as the author need descending sort order
             return Double.valueOf(this.tempo).compareTo(other.tempo);
         }
     }
@@ -522,7 +491,6 @@ public class Gerente {
     public void executar () {
 	double dtR = 2;
     	eventos = new ArrayList<Cell>();
-	System.out.println(fila.peek().t0);
     	for (Processo proc : this.fila) {
 	    eventos.add(new Cell (proc, proc.t0, 0, 0));
     		for (int i = 0; i < proc.posacessos.length; i++)
@@ -530,13 +498,13 @@ public class Gerente {
     		eventos.add(new Cell (proc, proc.tf, 0, 2));
     	}
 	
-    	Collections.sort(eventos); //na teoria ta ordenado por tempo
+    	Collections.sort(eventos); 
     	double tpassado = 0, tzerarbitR = 0 ;
-    	//imprimir();
+    	imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo && tzerarbitR <= celula.tempo) {
 		    if (tpassado <= celula.tempo) {
-			//imprimir();
+			imprimir();
 			tpassado += dt;
 		    }
     		
@@ -551,19 +519,18 @@ public class Gerente {
     				//criar processo na memoria
     				switch (algespaco) {
     					case 1:
-					        System.out.println("firstfit");
     						firstFit(celula.proc);
     						break;
     					case 2:
-					        System.out.println("nextfit");
+
     						nextFit(celula.proc);
     						break;
     					case 3:
-					        System.out.println("bestfit");
+
     						bestFit(celula.proc);
     						break;
     					case 4:
-					        System.out.println("worstfit");
+
     						worstFit(celula.proc);
     						break;
     					default:
@@ -575,19 +542,18 @@ public class Gerente {
     				//acessar endereço na memoria
     				switch (algsubstitui) {
     					case 1:
-					        System.out.println("optimal");
+
     						optimal(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 2:
-					        System.out.println("SecondChance");
 					        secondChance(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 3:
-					        System.out.println("Clock");
+
 					        clock(celula.pos + celula.proc.offset, celula.proc.pid);
     						break;
     					case 4:
-    						//lru()
+					        System.out.println("Não implementado =/");
     						break;
     					default:
     						System.out.println("ALGO DEU ERRADO no switch algsubstitui");
@@ -595,24 +561,21 @@ public class Gerente {
     				}
     				break;
     			case 2:
-			    System.out.println("Morreu o processo " + celula.proc.pid);
-			    System.out.println("Fisica " + Mtotal.toString());
-			    System.out.println("Virtual " +Mvirtual.toString());
+			   
 			    kill(celula.proc);
-			    System.out.println("Fisica " + Mtotal.toString());
-			    System.out.println("Virtual " +Mvirtual.toString());
-    				//remover processo das memorias
+
+
     				break;
     			default:
     				System.out.println("ALGO DEU ERRADO no switch celula.tipoevento");
-    				//na teoria nunca deveria passar
+
     				break;
     		}
 
 
     	}
 	System.out.println("Estado final");
-	//imprimir();
+	imprimir();
     }
     
 	
@@ -633,6 +596,7 @@ public class Gerente {
             } else if (comando.equals("executa")) {
                 gerente.dt = StdIn.readDouble();
 		gerente.executar();
+		System.out.println("Pagefaults: " + gerente.pagefault);
                 System.out.println(gerente.dt);
             } else if (comando.equals("sai")) {
                 System.out.println("saiu!");
