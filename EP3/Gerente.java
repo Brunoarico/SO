@@ -107,6 +107,7 @@ public class Gerente {
 	int size = 0;                                                            //quantidade de s
 	int count = 0, beg = 0;
 	while (size <= tam) size += p;                             //somo p até fechar a quantidade minima de paginas
+	Proc.b = size;
 	for (int i = 0; i < virtual; i++) {                         
 	    if (!Mvirtual.get(i)) {                      
 		beg = i;
@@ -246,10 +247,10 @@ public class Gerente {
 	int vblocks, rblocks;
 	Mvirtual.set(Proc.offset, Proc.offset+Proc.b, false); //limpa a area dele da virtual
 	vblocks = Proc.offset;                               
-	while (vblocks < Proc.offset+Proc.b) {                 //verifica cada bloco
+	while (vblocks <= Proc.offset+Proc.b) {                 //verifica cada bloco
 	    if (bindv.containsKey(vblocks)) {               //se ta na fisica
 		rblocks = bindv.get(vblocks);               //pega esse bloco
-		Mtotal.set(rblocks, rblocks+p, false);    //e limpa
+		Mtotal.set(rblocks, rblocks+p, false);       //e limpa
 		bindv.remove(vblocks);                      //removo o bind do v para a r
 		bindr.remove(rblocks);                      //removo o bind do r para o v
 	    }
@@ -274,7 +275,7 @@ public class Gerente {
 			Mtotal.set(i*p, (i+1)*p); //preenche esse bloco do bitset
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
-			    fprintPagina("/tmp/ep3.mem", pid, j, p);
+			    fprintPagina("/tmp/ep3.mem", pid, j, s);
 			}
 			System.out.println(Mtotal.toString());
 			binding(accblk, i);
@@ -448,10 +449,10 @@ public class Gerente {
         printArquivo("/tmp/ep3.vir");
         System.out.println("\nBitmap da memória virtual");
         printBitSet(Mvirtual);
-        System.out.println("\nArquivo Memória física");
-        printArquivo("/tmp/ep3.mem");
-        System.out.println("\nBitmap da memória física");
-        printBitSet(Mtotal);
+        //System.out.println("\nArquivo Memória física");
+        //printArquivo("/tmp/ep3.mem");
+        //System.out.println("\nBitmap da memória física");
+        //printBitSet(Mtotal);
         System.out.println("---");
     }
 
@@ -510,7 +511,7 @@ public class Gerente {
     	//imprimir();
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo) {
-		    imprimir();
+		    //imprimir();
 		    tpassado += dt;
     		}
 		
@@ -563,7 +564,10 @@ public class Gerente {
     				}
     				break;
     			case 2:
-    				//remover(Proc)
+			    System.out.println("Morreu o processo " + celula.proc.pid);
+			    System.out.println(Mtotal.toString());
+			    kill(celula.proc);
+			    System.out.println(Mtotal.toString());
     				//remover processo das memorias
     				break;
     			default:
