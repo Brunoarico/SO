@@ -309,13 +309,9 @@ public class Gerente {
 			//imprimindo no arquivo da memoria virtual
 			for (int j = i*p; j < (i+1)*p; j++) {
 			    fprintPagina("/tmp/ep3.mem", pid, j, s);
-			    System.out.println("escrevendo");
 			}
-			System.out.println("Associa " + accblk + " a " + i);
 			binding (accblk, i); //faz a associação
-			SC.add(accblk); //entra na fila
-			System.out.println("Tinha espaço");
-			System.out.println(Mtotal.toString());
+			SC.add(i); //entra na fila
 			pagebit[accblk] = true; //liga o bit de acesso
 			return;
 		     }
@@ -324,21 +320,17 @@ public class Gerente {
 	     else {
 		 buffer = firstbuffer = SC.remove(); //tira da fila
 		 while (pagebit[buffer]){ //olha o bit
-		     System.out.println("O bit de " + buffer + "é true");
 		     SC.add(buffer); //se for true devolve 
 		     buffer = SC.remove(); //tenta o proximo
 		     if(buffer == firstbuffer) break; //se voltou no primeiro usa o ele
 		 
 		 }
-		 System.out.println("O espaço foi alocado "+ buffer);
-		 System.out.println(Mtotal.toString());
 		 binding (accblk, bindv.get(buffer));
 		 return;
 	     }	 
 	}
 	else{
 	    pagebit[accblk] = true; //so liga o bit de acesso
-	    System.out.println("acessou a pagina " + accblk );
 	    return;
 	}
     }
@@ -373,7 +365,10 @@ public class Gerente {
 		 binding (accblk, bindv.get(CList.remove(pointer))); //associa
 	     }	 
 	}
-	else pagebit[accblk] = true;
+	
+	else {
+	    pagebit[accblk] = true;
+	}
     }
     //////////////////////// LEITURA ////////////////////////////////
 
@@ -489,7 +484,7 @@ public class Gerente {
     }
 
     public void executar () {
-	double dtR = 2;
+	double dtR = 0.1;
     	eventos = new ArrayList<Cell>();
     	for (Processo proc : this.fila) {
 	    eventos.add(new Cell (proc, proc.t0, 0, 0));
@@ -504,7 +499,7 @@ public class Gerente {
     	for (Cell celula : eventos) {
     		while (tpassado < celula.tempo && tzerarbitR <= celula.tempo) {
 		    if (tpassado <= celula.tempo) {
-			imprimir();
+			//imprimir();
 			tpassado += dt;
 		    }
     		
@@ -575,7 +570,7 @@ public class Gerente {
 
     	}
 	System.out.println("Estado final");
-	imprimir();
+	//imprimir();
     }
     
 	
